@@ -61,6 +61,7 @@
   .sec-head{padding:22px 0 6px; text-align:center;}
   .sec-title{font-size:24px; font-weight:700; margin:0 0 4px;}
   .sec-date{font-size:13px; color:var(--muted); margin:0 0 12px;}
+  .sec-date.sec-hijri{margin-top:-9px; font-size:12.5px;}
   .progress-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
   .progress-text{font-size:13.5px; color:var(--muted); font-weight:600;}
   .reset-btn{
@@ -5365,11 +5366,16 @@ function dateLine(){
     return new Intl.DateTimeFormat("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
   }catch(e){ return ""; }
 }
+function hijriLine(){
+  try{
+    return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", { day: "numeric", month: "long", year: "numeric" }).format(new Date());
+  }catch(e){ return ""; }
+}
 function renderSection(cat){
   const data = ATHKAR_DATA[cat];
   const p = sectionProgress(cat);
   let html = '<div class="sec-head"><h2 class="sec-title">' + esc(data.title) + '</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p>' +
+    '<p class="sec-date">' + esc(dateLine()) + '</p>' + '<p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p>' +
     '<div class="progress-row"><span class="progress-text">أتممتَ ' + toAr(p.done) + ' من ' + toAr(p.total) + '</span>' +
     '<button class="reset-btn" type="button" id="resetBtn">↺ إعادة هذا القسم</button></div>' +
     '<div class="bar"><i style="width:' + (p.total ? (p.done / p.total) * 100 : 0) + '%"></i></div>' +
@@ -5402,7 +5408,7 @@ function renderWird(){
   const dua = DUA_POOL[localEpochDay() % DUA_POOL.length];
   const hadith = HADITHS[localEpochDay() % HADITHS.length];
   let html = '<div class="sec-head"><h2 class="sec-title">فائدة اليوم</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p></div><div class="cards">';
+    '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div><div class="cards">';
   html += '<article class="card read-card"><div class="card-main" id="faidaAyahBody">' +
     '<h3 class="read-head">📖 آية من وردك اليوم</h3><p class="read-text">جارٍ التحضير…</p></div></article>';
   html += '<article class="card" id="faidaDuaCard" role="button" tabindex="0"><div class="card-main">' +
@@ -5629,7 +5635,7 @@ function renderQuran(){
 }
 function quranSectionHeadHTML(){
   return '<div class="sec-head"><h2 class="sec-title">المصحف — ورد القرآن</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p></div>';
+    '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div>';
 }
 function renderQuranHome(){
   let html = quranSectionHeadHTML() + '<div class="cards">';
@@ -5784,7 +5790,7 @@ function findChapter(chapterId){
 }
 function miscHeadHTML(title){
   return '<div class="sec-head"><h2 class="sec-title">' + esc(title) + '</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p></div>';
+    '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div>';
 }
 function renderMisc(){
   if (miscState.level === "chapter") renderMiscChapter();
