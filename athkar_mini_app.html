@@ -212,8 +212,12 @@
     background-size:200% 100%; animation:qshimmer 1.3s infinite linear;
   }
   @keyframes qshimmer{from{background-position:180% 0;} to{background-position:-80% 0;}}
-  .q-page-img{display:block; width:100%; height:auto; aspect-ratio:1260/2038; opacity:0; transition:opacity .35s ease;}
+  .q-page-img{display:block; width:100%; height:auto; aspect-ratio:1260/2038; opacity:0; transition:opacity .35s ease, filter .35s ease;}
   .q-page-img.loaded{opacity:1;}
+  /* فلتر ليلي لصفحات المصحف: الورقة الساطعة تُخفت لدرجة ورقية دافئة في الوضع الليلي */
+  [data-theme="dark"] .q-page-card{background:#2A241A; border-color:rgba(201,162,39,.22); box-shadow:none;}
+  [data-theme="dark"] .q-img-wrap{background:#241E14;}
+  [data-theme="dark"] .q-page-img{filter:brightness(.86) sepia(.32) saturate(.88) contrast(.97);}
   .q-img-fallback{
     padding:34px 16px; text-align:right; color:#6B7A70;
     font-size:14px; font-weight:600; line-height:2;
