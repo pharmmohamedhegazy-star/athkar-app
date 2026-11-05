@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- مُذَكِّرٌ — Mini App v3.3 — حصن المسلم + أدعية قرآنية موثقة + ورد القرآن بمصدر واحد (البوت) -->
+<!-- مُذَكِّرٌ — Mini App v3.4 — حصن المسلم + أدعية قرآنية موثقة + ورد القرآن بمصدر واحد (البوت) -->
 <html dir="rtl" lang="ar" data-theme="light">
 <head>
 <meta charset="UTF-8" />
@@ -552,7 +552,7 @@ const ATHKAR_DATA = {
     "id": "e83",
     "src": 83,
     "text": "حَسْبِيَ اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ عَلَيهِ تَوَكَّلتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
-    "target": 1,
+    "target": 7,
     "tier": "core"
    },
    {
@@ -4573,7 +4573,7 @@ function fmtDua(text){
   t = t.split("بسم الله الرحمن الرحيم").join("\u0001");
   t = t.replace(/﴿([\s\S]*?)﴾/g, '<span class="verse">$1</span>');
   t = t.split("﴿").join("").split("﴾").join("");
-  t = t.split("\u0001").join('<span class="basmala">بسم الله الرحمن الرحيم</span>');
+  t = t.split("\u0001").join('<span class="basmala">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span>');
   return t;
 }
 const HINT_KEY = "mudhakir_hint_v1";
