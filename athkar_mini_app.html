@@ -168,6 +168,22 @@
     background:var(--primary-soft); color:var(--primary); border-radius:99px;
     font-family:inherit; font-size:13px; font-weight:700; padding:8px 16px; cursor:pointer; min-height:40px;
   }
+  .q-count-chips{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 14px;}
+  .q-count-chip{
+    border:1px solid var(--border); background:var(--card); color:var(--primary);
+    border-radius:99px; padding:8px 18px; min-height:44px; min-width:52px;
+    font-family:inherit; font-size:16px; font-weight:700; cursor:pointer;
+  }
+  .q-count-chip.selected{background:var(--primary); border-color:var(--primary); color:#FFFDF8;}
+  [data-theme="dark"] .q-count-chip.selected{color:#0C1410;}
+  .q-jump-field{margin-top:16px;}
+  .q-danger-zone{margin-top:20px; border-top:1px solid var(--border); padding-top:14px;}
+  .q-danger-btn{
+    background:none; border:none; color:#B3261E; font-family:inherit;
+    font-size:14px; font-weight:700; cursor:pointer; padding:8px 0; min-height:44px;
+    text-align:right;
+  }
+  .q-end p{margin:0;}
   .q-head{
     position:sticky; top:69px; z-index:40; margin-top:16px;
     background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -721,14 +737,22 @@ function switchTab(tab){
    quran.com الرسمي — https://cdn.jsdelivr.net/gh/akram-seid/quran-hd-images@main/images/{NNN}.jpg
    (NNN برقم الصفحة مُصفّراً لثلاث خانات، المقاس 1260×2038؛ صفحات 001 و300 و604
    أجابت 200 image/jpeg، والترقيم مطابق: 001 الفاتحة و002 أول البقرة).
-   ملحوظة: مصدر PNG الأصلي (cdn.islamic.network) محجوب حالياً (403)، فهذا مصدر JPG مُتحقق منه. */
-const MUSHAF_KEY = "mudhakir_mushaf_v1";
+   ملحوظة: مصدر PNG الأصلي (cdn.islamic.network) محجوب حالياً (403)، فهذا مصدر JPG مُتحقق منه.
+
+   نموذج الورد (مراجعة المالك 3): يُضبط مرة واحدة بعدد الصفحات اليومية فقط.
+   الحالة في mudhakir_mushaf_v2 = {pagesPerDay, currentPage, lastPage, completedDate}:
+   currentPage هي أول صفحة غير مُتمّة، والمدى اليومي يُشتق منها دائماً:
+   from = currentPage، to = min(604, currentPage + pagesPerDay - 1).
+   لا يتحرك المدى حتى يضغط المستخدم «أتممت ورد اليوم» في بطاقة نهاية القراءة. */
+const MUSHAF_KEY = "mudhakir_mushaf_v2";
+const MUSHAF_V1_KEY = "mudhakir_mushaf_v1";
 const QIMG_BASES = [
   "https://cdn.jsdelivr.net/gh/akram-seid/quran-hd-images@main/images/",
   "https://raw.githubusercontent.com/akram-seid/quran-hd-images/main/images/"
 ];
-let mushaf = { from: null, to: null, lastPage: null };
-let quranMode = "home"; /* home | setup | read */
+let mushaf = { pagesPerDay: null, currentPage: 1, lastPage: 1, completedDate: null };
+let qRange = { from: null, to: null }; /* مدى جلسة القراءة الحالية فقط */
+let quranMode = "home"; /* home | settings | read */
 let qCurrent = null;
 let qObserver = null;
 let qSaveTimer = null;
@@ -737,22 +761,128 @@ function quranImgUrl(p, b){ return QIMG_BASES[b || 0] + String(p).padStart(3, "0
 function validRange(f, t){
   return Number.isInteger(f) && Number.isInteger(t) && f >= 1 && t <= 604 && f <= t;
 }
+function validPagesPerDay(n){
+  return Number.isInteger(n) && n >= 1 && n <= 50;
+}
+function validPage(p){
+  return Number.isInteger(p) && p >= 1 && p <= 604;
+}
 function clampToRange(p, f, t){
   p = parseInt(p, 10);
   if (!p || p < f) return f;
   if (p > t) return t;
   return p;
 }
+function normalizeMushafState(raw){
+  if (!raw || typeof raw !== "object") return null;
+  let currentPage = parseInt(raw.currentPage, 10);
+  if (!Number.isFinite(currentPage)) currentPage = 1;
+  currentPage = Math.min(605, Math.max(1, currentPage));
+  let lastPage = parseInt(raw.lastPage, 10);
+  if (!Number.isFinite(lastPage)) lastPage = currentPage;
+  lastPage = currentPage > 604 ? 605 : Math.min(604, Math.max(1, lastPage));
+  const pagesPerDay = parseInt(raw.pagesPerDay, 10);
+  return {
+    /* الإدخال اليدوي محصور بين 1 و50، لكن قيمة مرحّلة من نطاق v1 قد تكون أكبر؛
+       نحتفظ بها هنا حتى لا ينهار اشتقاق المدى. */
+    pagesPerDay: Number.isInteger(pagesPerDay) && pagesPerDay >= 1 && pagesPerDay <= 604 ? pagesPerDay : null,
+    currentPage: currentPage,
+    lastPage: lastPage,
+    completedDate: typeof raw.completedDate === "string" ? raw.completedDate : null
+  };
+}
 function loadMushaf(){
   try{
-    const s = JSON.parse(localStorage.getItem(MUSHAF_KEY) || "null");
-    if (s && validRange(s.from, s.to)){
-      mushaf = { from: s.from, to: s.to, lastPage: clampToRange(s.lastPage, s.from, s.to) };
+    const rawV2 = localStorage.getItem(MUSHAF_KEY);
+    if (rawV2){
+      const normalized = normalizeMushafState(JSON.parse(rawV2));
+      if (normalized){ mushaf = normalized; return; }
+    }
+  }catch(e){/* تخزين v2 غير متاح أو تالف — نحاول الترحيل من v1 */}
+  try{
+    const old = JSON.parse(localStorage.getItem(MUSHAF_V1_KEY) || "null");
+    if (old && validRange(old.from, old.to)){
+      mushaf = {
+        pagesPerDay: old.to - old.from + 1,
+        currentPage: old.from,
+        lastPage: clampToRange(old.lastPage, old.from, old.to),
+        completedDate: null
+      };
+      persistMushaf();
     }
   }catch(e){/* التخزين غير متاح */}
 }
 function persistMushaf(){
   try{ localStorage.setItem(MUSHAF_KEY, JSON.stringify(mushaf)); }catch(e){/* التخزين غير متاح */}
+}
+function getDerivedRange(startPage, count){
+  if (!Number.isInteger(count) || count < 1 || count > 604 || !validPage(startPage)) return null;
+  return { from: startPage, to: Math.min(604, startPage + count - 1) };
+}
+function getCurrentRange(){
+  return getDerivedRange(mushaf.currentPage, mushaf.pagesPerDay);
+}
+function isKhatmaComplete(){
+  return mushaf.currentPage > 604;
+}
+function getHomeRange(){
+  if (!mushaf.pagesPerDay || isKhatmaComplete()) return null;
+  const range = getCurrentRange();
+  if (!range) return null;
+  const isNext = mushaf.completedDate === todayKey();
+  return { from: range.from, to: range.to, label: isNext ? "ورد الغد" : "ورد اليوم", isNext: isNext };
+}
+function quranResumePage(range){
+  if (!range) return null;
+  return mushaf.lastPage >= range.from && mushaf.lastPage <= range.to ? mushaf.lastPage : range.from;
+}
+function khatmaProgressPct(){
+  if (isKhatmaComplete()) return 100;
+  return Math.floor(((mushaf.currentPage - 1) / 604) * 100);
+}
+function setPagesPerDay(n){
+  if (!validPagesPerDay(n)) return false;
+  mushaf.pagesPerDay = n;
+  persistMushaf();
+  return true;
+}
+function jumpToPage(p){
+  if (!validPage(p)) return false;
+  mushaf.currentPage = p;
+  mushaf.lastPage = p;
+  mushaf.completedDate = null;
+  persistMushaf();
+  return true;
+}
+function resetKhatma(){
+  mushaf.currentPage = 1;
+  mushaf.lastPage = 1;
+  mushaf.completedDate = null;
+  persistMushaf();
+}
+function advancePastRange(range){
+  if (!range || !validRange(range.from, range.to)) return false;
+  mushaf.currentPage = range.to + 1;
+  mushaf.lastPage = mushaf.currentPage;
+  mushaf.completedDate = todayKey();
+  persistMushaf();
+  return isKhatmaComplete();
+}
+function applyDeepLinkRange(f, t){
+  if (!validRange(f, t)) return false;
+  mushaf.currentPage = f;
+  if (!mushaf.pagesPerDay) mushaf.pagesPerDay = t - f + 1;
+  mushaf.lastPage = f;
+  qRange = { from: f, to: t };
+  quranMode = "read";
+  persistMushaf();
+  return true;
+}
+function openQuranRange(range, startAt){
+  if (!range || !validRange(range.from, range.to)) return;
+  qRange = { from: range.from, to: range.to };
+  quranMode = "read";
+  renderQuranReader(startAt);
 }
 function scheduleMushafSave(){
   mushaf.lastPage = qCurrent;
@@ -763,79 +893,169 @@ function stopQuranObserver(){
   if (qObserver){ qObserver.disconnect(); qObserver = null; }
 }
 function quranProgressPct(){
-  if (!mushaf.from || qCurrent == null) return 0;
-  const total = mushaf.to - mushaf.from + 1;
-  return Math.round(((qCurrent - mushaf.from + 1) / total) * 100);
+  if (!qRange.from || qCurrent == null) return 0;
+  const total = qRange.to - qRange.from + 1;
+  return Math.round(((qCurrent - qRange.from + 1) / total) * 100);
 }
 function renderQuran(){
   stopQuranObserver();
-  if (quranMode === "read" && mushaf.from) renderQuranReader();
-  else if (quranMode === "setup") renderQuranSetup();
+  if (quranMode === "read" && qRange.from) renderQuranReader();
+  else if (quranMode === "settings" && mushaf.pagesPerDay) renderQuranSettings();
   else renderQuranHome();
 }
-function quranSetupHTML(){
-  return '<article class="card read-card"><div class="card-main">' +
-    '<h3 class="read-head">📖 تعيين ورد القرآن</h3>' +
-    '<p class="read-text">اختر مدى صفحات وردك من مصحف المدينة (من ١ إلى ٦٠٤):</p>' +
-    '<div class="q-inputs">' +
-    '<label class="q-field">من صفحة<input class="q-input" id="qFrom" type="number" inputmode="numeric" min="1" max="604" value="' + (mushaf.from || "") + '"></label>' +
-    '<label class="q-field">إلى صفحة<input class="q-input" id="qTo" type="number" inputmode="numeric" min="1" max="604" value="' + (mushaf.to || "") + '"></label>' +
-    '</div>' +
-    '<p class="q-error" id="qError">من فضلك أدخل مدى صفحات صحيحاً بين ١ و٦٠٤.</p>' +
-    '<div class="q-actions"><button class="q-btn primary" type="button" id="qStart">ابدأ القراءة</button></div>' +
-    '<button class="q-start-chip" type="button" id="qFromStart">من أول المصحف</button>' +
-    '</div></article>';
+function quranSectionHeadHTML(){
+  return '<div class="sec-head"><h2 class="sec-title">المصحف — ورد القرآن</h2>' +
+    '<p class="sec-date">' + esc(dateLine()) + '</p></div>';
 }
-function bindQuranSetup(){
-  const fromEl = document.getElementById("qFrom");
-  const toEl = document.getElementById("qTo");
-  document.getElementById("qFromStart").addEventListener("click", () => { fromEl.value = 1; toEl.focus(); });
-  document.getElementById("qStart").addEventListener("click", () => {
-    const f = parseInt(fromEl.value, 10);
-    const t = parseInt(toEl.value, 10);
-    if (!validRange(f, t)){
-      document.getElementById("qError").style.display = "block";
-      return;
-    }
-    mushaf = { from: f, to: t, lastPage: f };
-    persistMushaf();
-    quranMode = "read";
-    renderQuranReader(f);
+function quranPagesSelectorHTML(prefix, value){
+  const presets = [2, 3, 5, 7, 10];
+  let chips = "";
+  presets.forEach(n => {
+    chips += '<button class="q-count-chip' + (n === value ? ' selected' : '') +
+      '" type="button" data-pages="' + n + '">' + toAr(n) + '</button>';
   });
+  return '<div class="q-count-chips" id="' + prefix + 'Chips" role="group" aria-label="عدد الصفحات اليومية">' + chips + '</div>' +
+    '<label class="q-field">أو عدد مخصص (من ١ إلى ٥٠)' +
+    '<input class="q-input" id="' + prefix + 'Count" type="number" inputmode="numeric" min="1" max="50" value="' + (value || "") + '"></label>' +
+    '<p class="q-error" id="' + prefix + 'Error">من فضلك اختر عدد صفحات صحيحاً بين ١ و٥٠.</p>';
 }
-function renderQuranSetup(){
-  contentEl.innerHTML = '<div class="sec-head"><h2 class="sec-title">المصحف — ورد القرآن</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p></div><div class="cards">' + quranSetupHTML() + '</div>';
-  bindQuranSetup();
+function bindPagesSelector(prefix){
+  const input = document.getElementById(prefix + "Count");
+  const error = document.getElementById(prefix + "Error");
+  const chips = Array.from(document.querySelectorAll("#" + prefix + "Chips .q-count-chip"));
+  function mark(){
+    const n = parseInt(input.value, 10);
+    chips.forEach(ch => ch.classList.toggle("selected", +ch.getAttribute("data-pages") === n));
+  }
+  chips.forEach(ch => ch.addEventListener("click", () => {
+    input.value = ch.getAttribute("data-pages");
+    error.style.display = "none";
+    mark();
+  }));
+  input.addEventListener("input", () => { error.style.display = "none"; mark(); });
+  mark();
+}
+function readPagesSelector(prefix){
+  const n = parseInt(document.getElementById(prefix + "Count").value, 10);
+  if (validPagesPerDay(n)) return n;
+  document.getElementById(prefix + "Error").style.display = "block";
+  return null;
 }
 function renderQuranHome(){
-  let html = '<div class="sec-head"><h2 class="sec-title">المصحف — ورد القرآن</h2>' +
-    '<p class="sec-date">' + esc(dateLine()) + '</p></div><div class="cards">';
-  if (mushaf.from){
-    const last = mushaf.lastPage || mushaf.from;
+  let html = quranSectionHeadHTML() + '<div class="cards">';
+  if (!mushaf.pagesPerDay){
     html += '<article class="card read-card"><div class="card-main">' +
-      '<h3 class="read-head">📖 وردك الحالي</h3>' +
-      '<p class="read-text">صفحات ' + toAr(mushaf.from) + ' – ' + toAr(mushaf.to) +
-      '\nآخر موضع وصلت إليه: صفحة ' + toAr(last) + '</p>' +
+      '<h3 class="read-head">📖 وردك اليومي من القرآن</h3>' +
+      '<p class="read-text">كم صفحة تريد أن تقرأ كل يوم؟</p>' +
+      '<p class="virtue">يُضبط هذا مرة واحدة فقط؛ وبعدها يحسب لك التطبيق ورد كل يوم وموضعك في الختمة تلقائياً.</p>' +
+      quranPagesSelectorHTML("qf", 5) +
+      '<div class="q-actions"><button class="q-btn primary" type="button" id="qFirstSave">حفظ وابدأ القراءة</button></div>' +
+      '</div></article>';
+  } else if (isKhatmaComplete()){
+    html += '<article class="card read-card"><div class="card-main">' +
+      '<h3 class="read-head">🎉 ختمت المصحف كاملاً — تقبل الله</h3>' +
+      '<p class="read-text">أتممت قراءة الصفحات ١ – ٦٠٤. بارك الله فيك وجعل القرآن ربيع قلبك.</p>' +
+      '<div class="bar"><i style="width:100%"></i></div>' +
       '<div class="q-actions">' +
-      '<button class="q-btn primary" type="button" id="qResume">أكمل القراءة</button>' +
-      '<button class="q-btn" type="button" id="qChange">غيّر الورد</button>' +
+      '<button class="q-btn primary" type="button" id="qRestart">ابدأ ختمة جديدة</button>' +
+      '<button class="q-btn" type="button" id="qSettings">إعدادات الورد</button>' +
       '</div></div></article>';
   } else {
-    html += quranSetupHTML();
+    const range = getHomeRange();
+    const resume = quranResumePage(range);
+    const partial = resume !== range.from;
+    html += '<article class="card read-card"><div class="card-main">' +
+      '<h3 class="read-head">📖 ' + esc(range.label) + '</h3>' +
+      '<p class="read-text">' + esc(range.label) + ': صفحات ' + toAr(range.from) + ' – ' + toAr(range.to) + '\n' +
+      toAr(mushaf.pagesPerDay) + ' صفحات يومياً\n' +
+      'موضعك في الختمة: صفحة ' + toAr(mushaf.currentPage) + ' من ' + toAr(604) + ' (' + toAr(khatmaProgressPct()) + '٪)' +
+      (partial ? '\nآخر موضع وصلت إليه: صفحة ' + toAr(resume) : '') + '</p>' +
+      '<div class="bar"><i style="width:' + khatmaProgressPct() + '%"></i></div>' +
+      '<div class="q-actions">' +
+      '<button class="q-btn primary" type="button" id="qReadToday">' + (partial ? 'أكمل ' : 'اقرأ ') + esc(range.label) + '</button>' +
+      '<button class="q-btn" type="button" id="qSettings">إعدادات الورد</button>' +
+      '</div></div></article>';
   }
   html += '</div>';
   contentEl.innerHTML = html;
-  if (mushaf.from){
-    document.getElementById("qResume").addEventListener("click", () => {
-      quranMode = "read"; renderQuranReader(mushaf.lastPage || mushaf.from);
+  if (!mushaf.pagesPerDay){
+    bindPagesSelector("qf");
+    document.getElementById("qFirstSave").addEventListener("click", () => {
+      const n = readPagesSelector("qf");
+      if (n == null || !setPagesPerDay(n)) return;
+      mushaf.lastPage = mushaf.currentPage;
+      persistMushaf();
+      openQuranRange(getCurrentRange(), mushaf.currentPage);
     });
-    document.getElementById("qChange").addEventListener("click", () => {
-      quranMode = "setup"; renderQuran();
+    return;
+  }
+  if (isKhatmaComplete()){
+    document.getElementById("qRestart").addEventListener("click", () => {
+      resetKhatma();
+      quranMode = "home";
+      renderQuran();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   } else {
-    bindQuranSetup();
+    const range = getHomeRange();
+    document.getElementById("qReadToday").addEventListener("click", () => {
+      openQuranRange(range, quranResumePage(range));
+    });
   }
+  document.getElementById("qSettings").addEventListener("click", () => {
+    quranMode = "settings";
+    renderQuran();
+  });
+}
+function renderQuranSettings(){
+  let html = quranSectionHeadHTML() + '<div class="cards">' +
+    '<article class="card read-card"><div class="card-main">' +
+    '<h3 class="read-head">⚙️ إعدادات الورد</h3>' +
+    '<p class="read-text">موضعك الحالي في الختمة: صفحة ' + toAr(Math.min(mushaf.currentPage, 604)) + '</p>' +
+    '<p class="read-text">عدد الصفحات اليومية</p>' +
+    quranPagesSelectorHTML("qs", mushaf.pagesPerDay) +
+    '<label class="q-field q-jump-field">الانتقال إلى صفحة' +
+    '<input class="q-input" id="qsJump" type="number" inputmode="numeric" min="1" max="604" placeholder="' + toAr(Math.min(mushaf.currentPage, 604)) + '"></label>' +
+    '<p class="q-error" id="qsJumpError">من فضلك أدخل رقم صفحة صحيحاً بين ١ و٦٠٤.</p>' +
+    '<div class="q-actions">' +
+    '<button class="q-btn primary" type="button" id="qSettingsSave">حفظ الإعدادات</button>' +
+    '<button class="q-btn" type="button" id="qSettingsBack">رجوع</button>' +
+    '</div>' +
+    '<div class="q-danger-zone">' +
+    '<p class="read-text">بدء ختمة جديدة يعيد موضعك إلى أول المصحف.</p>' +
+    '<button class="q-danger-btn" type="button" id="qResetKhatma">بدء ختمة جديدة من الصفحة ١</button>' +
+    '</div>' +
+    '</div></article></div>';
+  contentEl.innerHTML = html;
+  bindPagesSelector("qs");
+  document.getElementById("qSettingsBack").addEventListener("click", () => {
+    quranMode = "home";
+    renderQuran();
+  });
+  document.getElementById("qSettingsSave").addEventListener("click", () => {
+    const n = readPagesSelector("qs");
+    if (n == null) return;
+    const jumpRaw = document.getElementById("qsJump").value.trim();
+    let jump = null;
+    if (jumpRaw !== ""){
+      jump = parseInt(jumpRaw, 10);
+      if (!validPage(jump)){
+        document.getElementById("qsJumpError").style.display = "block";
+        return;
+      }
+    }
+    setPagesPerDay(n);
+    if (jump != null) jumpToPage(jump);
+    quranMode = "home";
+    renderQuran();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  document.getElementById("qResetKhatma").addEventListener("click", () => {
+    resetKhatma();
+    quranMode = "home";
+    renderQuran();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 function mountQuranImg(wrap, p, attempt){
   attempt = attempt || 0;
@@ -860,18 +1080,19 @@ function mountQuranImg(wrap, p, attempt){
 function updateQuranHead(){
   const pos = document.getElementById("qPos");
   if (!pos || qCurrent == null) return;
-  pos.textContent = "الصفحة " + toAr(qCurrent) + " من " + toAr(mushaf.to);
+  pos.textContent = "الصفحة " + toAr(qCurrent) + " من " + toAr(qRange.to);
   document.getElementById("qBar").style.width = quranProgressPct() + "%";
-  document.getElementById("qPrev").disabled = qCurrent <= mushaf.from;
-  document.getElementById("qNext").disabled = qCurrent >= mushaf.to;
+  document.getElementById("qPrev").disabled = qCurrent <= qRange.from;
+  document.getElementById("qNext").disabled = qCurrent >= qRange.to;
 }
 function quranGoTo(p){
-  const el = document.getElementById("qp" + clampToRange(p, mushaf.from, mushaf.to));
+  const el = document.getElementById("qp" + clampToRange(p, qRange.from, qRange.to));
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function renderQuranReader(startAt){
   stopQuranObserver();
-  const f = mushaf.from, t = mushaf.to;
+  if (!qRange.from || !qRange.to){ quranMode = "home"; renderQuranHome(); return; }
+  const f = qRange.from, t = qRange.to;
   qCurrent = clampToRange(startAt != null ? startAt : (mushaf.lastPage || f), f, t);
   let html = '<div class="q-head"><div class="q-head-row">' +
     '<p class="q-head-title">ورد القرآن — صفحات ' + toAr(f) + ' – ' + toAr(t) + '</p>' +
@@ -889,8 +1110,9 @@ function renderQuranReader(startAt){
       '</section>';
   }
   html += '</div>' +
-    '<div class="done-banner q-end">أتممت ورد القرآن اليوم — علّمه في البوت ليُحسب في يومك 🤲' +
-    '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>';
+    '<div class="done-banner q-end"><p>أتممت ورد القرآن اليوم — علّمه في البوت ليُحسب في يومك 🤲</p>' +
+    '<div class="q-actions"><button class="q-btn primary" type="button" id="qComplete">أتممت ورد اليوم — احفظ موضعي</button>' +
+    '<button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>';
   contentEl.innerHTML = html;
   contentEl.querySelectorAll(".q-img-wrap").forEach(wrap => {
     mountQuranImg(wrap, +wrap.getAttribute("data-wrap"));
@@ -898,12 +1120,21 @@ function renderQuranReader(startAt){
   document.getElementById("qPrev").addEventListener("click", () => quranGoTo(qCurrent - 1));
   document.getElementById("qNext").addEventListener("click", () => quranGoTo(qCurrent + 1));
   const exitFn = () => {
-    mushaf.lastPage = qCurrent; persistMushaf();
+    if (qCurrent != null) mushaf.lastPage = qCurrent;
+    persistMushaf();
     quranMode = "home"; renderQuran();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   document.getElementById("qExit").addEventListener("click", exitFn);
   document.getElementById("qEndExit").addEventListener("click", exitFn);
+  document.getElementById("qComplete").addEventListener("click", () => {
+    advancePastRange(qRange);
+    qRange = { from: null, to: null };
+    qCurrent = null;
+    quranMode = "home";
+    renderQuran();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   updateQuranHead();
   qObserver = new IntersectionObserver(entries => {
     entries.forEach(en => {
@@ -935,11 +1166,7 @@ function init(){
     if (t === "quran"){
       const f = parseInt(params.get("from"), 10);
       const tt = parseInt(params.get("to"), 10);
-      if (validRange(f, tt)){
-        mushaf = { from: f, to: tt, lastPage: f };
-        persistMushaf();
-        quranMode = "read";
-      }
+      applyDeepLinkRange(f, tt);
     }
   }catch(e){}
   switchTab(initial);
