@@ -205,6 +205,15 @@
   .q-end .q-btn{margin-top:12px;}
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
   .extra-divider{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; font-weight:700; margin:2px;}
+  .tap-hint{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    width:fit-content; margin:0 auto 10px; padding:4px 14px;
+    font-size:12.5px; font-weight:700; color:var(--primary);
+    background:var(--primary-soft); border:1px dashed var(--done-border); border-radius:99px;
+  }
+  .tap-hint .hand{display:inline-block; animation:hintTap 1.1s ease-in-out infinite alternate;}
+  @keyframes hintTap{from{transform:translateY(0)} to{transform:translateY(-2.5px) scale(1.15)}}
+  @media (prefers-reduced-motion: reduce){ .tap-hint .hand{animation:none;} }
   .extra-divider::before,.extra-divider::after{content:""; flex:1; height:1px; background:var(--border);}
   /* ===== الإصدار ٣: متفرّقة (بحث وتصفّح) ===== */
   .search-wrap{padding-top:14px;}
@@ -4092,12 +4101,20 @@ function fmtDua(text){
   t = t.split("\u0001").join('<span class="basmala">بسم الله الرحمن الرحيم</span>');
   return t;
 }
-function cardHTML(item){
+const HINT_KEY = "mudhakir_hint_v1";
+function hintNeeded(){
+  try{ return !localStorage.getItem(HINT_KEY); }catch(e){ return true; }
+}
+function markHintSeen(){
+  try{ localStorage.setItem(HINT_KEY, "1"); }catch(e){}
+}
+function cardHTML(item, withHint){
   const rem = counts[item.id];
   const done = rem === 0;
   return '' +
   '<article class="card' + (done ? ' done' : '') + '" data-id="' + item.id + '" role="button" tabindex="0">' +
     '<div class="card-main">' +
+      (withHint ? '<div class="tap-hint"><span class="hand">👆</span><span>اضغط على الذكر للعدّ</span></div>' : '') +
       '<div class="card-top">' +
       '<span class="chip">' + chipText(item) + '</span>' +
       '<span class="done-badge">✓ تم بحمد الله</span></div>' +
@@ -4129,12 +4146,14 @@ function renderSection(cat){
     (p.done === p.total ? '<div class="done-banner" id="doneBanner">أتممتَ ' + esc(data.title) + ' — تقبّل الله منك 🤲</div>' : '') +
     '</div><div class="cards">';
   let dividerShown = false;
+  let firstCard = true;
   data.items.forEach(it => {
     if (it.tier === "extra" && !dividerShown){
       html += '<div class="extra-divider"><span>✨ إضافي — لا يدخل في احتساب اليوم</span></div>';
       dividerShown = true;
     }
-    html += cardHTML(it);
+    html += cardHTML(it, firstCard && hintNeeded());
+    firstCard = false;
   });
   html += '</div>';
   contentEl.innerHTML = html;
@@ -4223,6 +4242,7 @@ function bindCards(){
 }
 function tapItem(id){
   if (counts[id] === undefined || counts[id] <= 0) return;
+  markHintSeen();
   counts[id] -= 1;
   persistCounts();
   const justDone = counts[id] === 0;
