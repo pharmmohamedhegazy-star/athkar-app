@@ -5869,6 +5869,8 @@ function misbahaTap(){
    نموذج الورد (v2.1 — مصدر واحد: البوت): خطة الورد وموضع الختمة يعيشان في
    البوت وحده. البوت يرسل في بطاقة الورد زراراً يفتح هذه الصفحة على مدى اليوم
    (?tab=quran&from&to)، فتخزّن الصفحة آخر مدى وصَل إليها في
+   (v3.0: صار البوت يُرفق المدى نفسه بكل روابطه، فتخزّنه الصفحة من أي تبويب
+   عبر cacheBotRange دون فتح المصحف قسراً — ودلالات التاريخ كما هي.)
    mudhakir_bot_range_v1 = {from, to, date, lastPage} وتقرأه فقط — لا إعداد
    صفحات ولا تقديم موضع هنا؛ الإتمام يُعلَّم من البوت. المدى قد يلفّ آخر
    المصحف (from > to) عند نهاية الختمة، والتسلسل يُبنى باللفّ.
@@ -5946,6 +5948,18 @@ function applyDeepLinkRange(f, t){
   qRange = { from: f, to: t };
   qPages = rangeSeq(f, t);
   quranMode = "read";
+  return true;
+}
+function cacheBotRange(f, t){
+  /* v3.0: البوت صار يُرفق مدى ورد اليوم بكل روابطه (قائمة، بطاقات، إرسال
+     فوري) لا برابط المصحف وحده — فيُخزَّن المدى الواصل من أي تبويب بنفس
+     دلالات التخزين المؤرّخ (صالح لليوم فقط)، مع إبقاء موضع القراءة الحالي
+     إن كان داخل المدى نفسه، ودون فتح المصحف قسراً. */
+  if (!validRange(f, t)) return false;
+  const keep = botRange && botRange.date === todayKey()
+    && rangeSeq(f, t).includes(botRange.lastPage) ? botRange.lastPage : f;
+  botRange = { from: f, to: t, date: todayKey(), lastPage: keep };
+  persistBotRange();
   return true;
 }
 function openQuranRange(range, startAt){
@@ -6292,10 +6306,12 @@ function init(){
     if (t === "mushaf") t = "quran";
     if (t && ATHKAR_SECTIONS.includes(t)){ currentSection = t; initial = "athkar"; }
     else if (t && TABS.includes(t)) initial = t;
+    const f = parseInt(params.get("from"), 10);
+    const tt = parseInt(params.get("to"), 10);
     if (t === "quran"){
-      const f = parseInt(params.get("from"), 10);
-      const tt = parseInt(params.get("to"), 10);
       applyDeepLinkRange(f, tt);
+    } else if (validRange(f, tt)){
+      cacheBotRange(f, tt);
     }
   }catch(e){}
   switchTab(initial);
