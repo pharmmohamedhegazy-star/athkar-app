@@ -174,8 +174,9 @@
   .q-info-surah{color:var(--primary); font-weight:700; white-space:nowrap;}
   .q-info-page{flex:1 1 auto; text-align:center; color:var(--text); font-weight:700; white-space:nowrap;}
   .q-info-juz{white-space:nowrap;}
-  /* كتلة التنقّل أسفل الصورة: أزرار (السابق | السورة | التالي) وتحتها
-     السلايدر/شريط التقدم خطاً رفيعاً ملتصقاً بها في نفس الكتلة النحيفة */
+  /* كتلة التنقّل أسفل الصورة: أزرار (السابق | السورة | التالي)، وفي الورد
+     تحتها شريط التقدم خطاً رفيعاً ملتصقاً بها في نفس الكتلة النحيفة.
+     (سلايدر التصفح أُزيل بقرار محمد 2026-11-12 بعد تجربة المعاينة.) */
   .q-dock{
     flex:0 0 auto; z-index:40;
     background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -184,7 +185,6 @@
   .q-dock-btns{display:flex; align-items:center; gap:6px;}
   .q-dock-btns .q-btn{padding:3px 10px; min-height:34px; font-size:13px; flex:1 1 0;}
   .q-dock .bar{height:4px; margin-top:5px;}
-  .q-dock .b-slider{margin-top:5px;}
   .q-dock .b-picker{margin:0 0 6px;}
   .q-page{margin-top:0;}
   .q-chip{
@@ -217,7 +217,6 @@
   .q-end{margin:18px 0 6px; text-align:right;}
   .q-end .q-btn{margin-top:12px;}
   /* ===== v5: التصفح الحر + علامة «هنا وقفت» + بطاقة الكهف ===== */
-  .b-slider{display:block; width:100%; margin:3px 0 0; accent-color:var(--primary); direction:rtl; height:13px; cursor:pointer;}
   .b-picker{
     max-height:190px; overflow:auto; margin-top:8px;
     border:1px solid var(--border); border-radius:12px; padding:4px 6px;
@@ -251,14 +250,17 @@
   .b-anim-prev{animation:bslideR .28s ease;}
   /* ===== قارئ المصحف بملء الشاشة (إصلاح الارتفاع): عند تفعيل أي قارئ
      (تصفح حر أو ورد) تنكمش الترويسة العامة إلى سطر نحيف، وتصير الحاوية
-     بملء 100dvh بلا أي تمرير طولي، ومنطقة صورة الصفحة تأخذ كل الباقي ===== */
+     بملء 100dvh بلا أي تمرير طولي، ومنطقة صورة الصفحة تأخذ كل الباقي.
+     خصم التنقل 70px لا 57: الارتفاع الفعلي المقاس لشريط التنقل 64px،
+     والباقي هامش أمان حتى لا تلتصق كتلة تنقّل القارئ بالشريط أو تُقصّ
+     (قياس headless 2026-11-12: بهامش ~6px في كل المقاسات) ===== */
   body.reader-on{overflow:hidden; padding-bottom:0;}
   body.reader-on header .header-in{padding:4px 16px; min-height:0;}
   body.reader-on .brand{font-size:19px;}
   body.reader-on .icon-btn{width:36px; height:36px; font-size:16px;}
   body.reader-on main.wrap{
-    height:calc(100vh - 45px - 57px - env(safe-area-inset-bottom));
-    height:calc(100dvh - 45px - 57px - env(safe-area-inset-bottom));
+    height:calc(100vh - 45px - 70px - env(safe-area-inset-bottom));
+    height:calc(100dvh - 45px - 70px - env(safe-area-inset-bottom));
     display:flex; flex-direction:column;
   }
   body.reader-on footer{display:none;}
@@ -287,14 +289,13 @@
     body.reader-on .brand{font-size:17px;}
     body.reader-on .icon-btn{width:32px; height:32px; font-size:15px;}
     body.reader-on main.wrap{
-      height:calc(100vh - 37px - 57px - env(safe-area-inset-bottom));
-      height:calc(100dvh - 37px - 57px - env(safe-area-inset-bottom));
+      height:calc(100vh - 37px - 70px - env(safe-area-inset-bottom));
+      height:calc(100dvh - 37px - 70px - env(safe-area-inset-bottom));
     }
     .q-reader{gap:5px; padding-top:4px;}
     .q-info{font-size:11.5px;}
     .q-dock{padding:4px 8px 5px;}
     .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
-    .q-dock .b-slider{height:10px; margin-top:4px;}
     .b-picker{max-height:150px;}
   }
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
@@ -6414,8 +6415,6 @@ function updateBrowseHead(){
   setBrowseInfo(browsePage);
   document.getElementById("bPrev").disabled = browsePage <= 1;
   document.getElementById("bNext").disabled = browsePage >= 604;
-  const sl = document.getElementById("bSlider");
-  if (sl && +sl.value !== browsePage) sl.value = browsePage;
 }
 function browseGo(p, dir){
   p = Math.min(604, Math.max(1, p));
@@ -6454,7 +6453,6 @@ function renderBrowse(){
     '<button class="q-btn" type="button" id="bNext">التالي</button>' +
     (botRange ? '<button class="q-btn" type="button" id="bToWird">الورد</button>' : '') +
     '</div>' +
-    '<input class="b-slider" type="range" id="bSlider" min="1" max="604" step="1" dir="rtl" value="' + browsePage + '" aria-label="التنقل بين الصفحات">' +
     '</div>' +
     '</div>';
   contentEl.innerHTML = html;
@@ -6471,9 +6469,6 @@ function renderBrowse(){
     picker.hidden = true;
     browseGo(SURA_STARTS[+b.getAttribute("data-surah")]);
   }));
-  const slider = document.getElementById("bSlider");
-  slider.addEventListener("input", () => { setBrowseInfo(+slider.value); });
-  slider.addEventListener("change", () => browseGo(+slider.value));
   const tw = document.getElementById("bToWird");
   if (tw) tw.addEventListener("click", () => {
     qView = "wird"; renderQuran();
