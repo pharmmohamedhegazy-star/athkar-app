@@ -110,8 +110,7 @@
   .virtue::before{content:"✦ "; color:var(--gold);}
   /* محاذاة يمين صريحة لكل المحتوى النصي (طلب المالك) — يبقى في المنتصف فقط:
      رقم «المتبقي» داخل دائرته (flex)، وشارة رقم صفحة المصحف، وعناوين شريط التنقل (flex) */
-  .virtue,.read-head,.read-text,
-  .progress-text,.q-head-title,.q-head-pos{text-align:right;}
+  .virtue,.read-head,.read-text,.progress-text{text-align:right;}
   .counter{
     flex:0 0 auto; align-self:center; width:66px; height:66px; border-radius:50%;
     border:2px solid var(--primary); color:var(--primary);
@@ -166,18 +165,28 @@
     text-align:right;
   }
   .q-end p{margin:0;}
-  .q-head{
-    position:sticky; top:69px; z-index:40; margin-top:16px;
-    background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    border:1px solid var(--border); border-radius:14px; padding:10px 14px 12px;
+  /* سطر معلومات القارئ — وحده فوق الصورة: السورة يميناً، رقم الصفحة
+     في الوسط، رقم الجزء شمالاً. لا عناصر تحكم فوق الصورة غيره */
+  .q-info{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:1px 4px 0; font-size:12.5px; font-weight:600; color:var(--muted);
   }
-  .q-head-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
-  .q-head-title{font-size:15px; font-weight:700; color:var(--primary); margin:0;}
-  .q-head-pos{font-size:13px; font-weight:600; color:var(--muted); margin:0;}
-  .q-head .bar{margin-top:9px;}
-  .q-head-btns{display:flex; gap:8px; margin-top:10px;}
-  .q-head-btns .q-btn{padding:7px 16px; min-height:40px; font-size:13.5px; flex:1;}
-  .q-page{scroll-margin-top:158px; margin-top:16px;}
+  .q-info-surah{color:var(--primary); font-weight:700; white-space:nowrap;}
+  .q-info-page{flex:1 1 auto; text-align:center; color:var(--text); font-weight:700; white-space:nowrap;}
+  .q-info-juz{white-space:nowrap;}
+  /* كتلة التنقّل أسفل الصورة: أزرار (السابق | السورة | التالي)، وفي الورد
+     تحتها شريط التقدم خطاً رفيعاً ملتصقاً بها في نفس الكتلة النحيفة.
+     (سلايدر التصفح أُزيل بقرار محمد 2026-11-12 بعد تجربة المعاينة.) */
+  .q-dock{
+    flex:0 0 auto; z-index:40;
+    background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--border); border-radius:12px; padding:5px 8px 6px;
+  }
+  .q-dock-btns{display:flex; align-items:center; gap:6px;}
+  .q-dock-btns .q-btn{padding:3px 10px; min-height:34px; font-size:13px; flex:1 1 0;}
+  .q-dock .bar{height:4px; margin-top:5px;}
+  .q-dock .b-picker{margin:0 0 6px;}
+  .q-page{margin-top:0;}
   .q-chip{
     display:inline-block; font-size:12px; font-weight:700; color:var(--primary);
     background:var(--primary-soft); border:1px solid var(--border);
@@ -207,6 +216,88 @@
   .q-img-fallback .q-btn{border-color:rgba(30,91,69,.3); color:#1E5B45; background:transparent; margin-top:8px;}
   .q-end{margin:18px 0 6px; text-align:right;}
   .q-end .q-btn{margin-top:12px;}
+  /* ===== v5: التصفح الحر + علامة «هنا وقفت» + بطاقة الكهف ===== */
+  .b-picker{
+    max-height:190px; overflow:auto; margin-top:8px;
+    border:1px solid var(--border); border-radius:12px; padding:4px 6px;
+  }
+  .b-picker[hidden]{display:none;}
+  .b-surah{
+    display:flex; justify-content:space-between; align-items:center; width:100%;
+    background:none; border:none; border-bottom:1px solid var(--border);
+    font-family:inherit; font-size:14px; font-weight:600; color:var(--text);
+    padding:9px 8px; min-height:44px; cursor:pointer; text-align:right;
+  }
+  .b-surah:last-child{border-bottom:none;}
+  .b-surah-pg{color:var(--muted); font-size:12.5px; font-weight:600;}
+  .q-marker{position:absolute; left:0; right:0; height:0; z-index:5; pointer-events:none;}
+  .q-marker i{position:absolute; left:0; right:0; top:-1px; height:2px; background:#C0392B; opacity:.85; display:block;}
+  .q-marker span{
+    position:absolute; top:-11px; inset-inline-start:8px; background:#C0392B; color:#fff;
+    font-size:11.5px; font-weight:700; border-radius:99px; padding:2px 10px; white-space:nowrap;
+  }
+  .kahf-card{border:1.5px solid var(--primary);}
+  .mk-toast{
+    position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(8px);
+    background:var(--primary); color:#FFFDF8; font-size:13.5px; font-weight:700;
+    border-radius:99px; padding:9px 18px; z-index:90; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; white-space:nowrap;
+  }
+  .mk-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  @keyframes bslideL{from{transform:translateX(-26px); opacity:.35;} to{transform:translateX(0); opacity:1;}}
+  @keyframes bslideR{from{transform:translateX(26px); opacity:.35;} to{transform:translateX(0); opacity:1;}}
+  .b-anim-next{animation:bslideL .28s ease;}
+  .b-anim-prev{animation:bslideR .28s ease;}
+  /* ===== قارئ المصحف بملء الشاشة (إصلاح الارتفاع): عند تفعيل أي قارئ
+     (تصفح حر أو ورد) تنكمش الترويسة العامة إلى سطر نحيف، وتصير الحاوية
+     بملء 100dvh بلا أي تمرير طولي، ومنطقة صورة الصفحة تأخذ كل الباقي.
+     خصم التنقل 70px لا 57: الارتفاع الفعلي المقاس لشريط التنقل 64px،
+     والباقي هامش أمان حتى لا تلتصق كتلة تنقّل القارئ بالشريط أو تُقصّ
+     (قياس headless 2026-11-12: بهامش ~6px في كل المقاسات) ===== */
+  body.reader-on{overflow:hidden; padding-bottom:0;}
+  body.reader-on header .header-in{padding:4px 16px; min-height:0;}
+  body.reader-on .brand{font-size:19px;}
+  body.reader-on .icon-btn{width:36px; height:36px; font-size:16px;}
+  body.reader-on main.wrap{
+    height:calc(100vh - 45px - 70px - env(safe-area-inset-bottom));
+    height:calc(100dvh - 45px - 70px - env(safe-area-inset-bottom));
+    display:flex; flex-direction:column;
+  }
+  body.reader-on footer{display:none;}
+  body.reader-on #content{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
+  .q-reader{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; padding-top:4px;}
+  .q-stage{flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;}
+  .q-stage .q-page-card{
+    height:100%; max-height:100%; max-width:100%; padding:6px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .q-stage .q-img-wrap{
+    height:100%; max-height:100%; max-width:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .q-stage .q-page-img{
+    width:auto; height:auto; max-width:100%; max-height:100%;
+    object-fit:contain; aspect-ratio:auto;
+  }
+  .q-reader .q-chip{display:none;}
+  .q-end-compact{flex:0 0 auto; margin:0; padding:8px 12px; font-size:13px;}
+  .q-end-compact .q-actions{margin-top:6px;}
+  .q-end-compact .q-btn{min-height:33px; padding:3px 14px; font-size:13px;}
+  /* الوضع الأفقي القصير: شريط وترويسة أنحف بعد — الصورة دائماً كاملة */
+  @media (orientation: landscape) and (max-height: 520px){
+    body.reader-on header .header-in{padding:2px 16px;}
+    body.reader-on .brand{font-size:17px;}
+    body.reader-on .icon-btn{width:32px; height:32px; font-size:15px;}
+    body.reader-on main.wrap{
+      height:calc(100vh - 37px - 70px - env(safe-area-inset-bottom));
+      height:calc(100dvh - 37px - 70px - env(safe-area-inset-bottom));
+    }
+    .q-reader{gap:5px; padding-top:4px;}
+    .q-info{font-size:11.5px;}
+    .q-dock{padding:4px 8px 5px;}
+    .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
+    .b-picker{max-height:150px;}
+  }
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
   .extra-divider{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; font-weight:700; margin:2px;}
   .tap-hint{
@@ -5686,6 +5777,7 @@ function switchTab(tab){
     quranMode = "home";
   }
   currentTab = tab;
+  setReaderMode(false);
   document.querySelectorAll(".nav-btn").forEach(b =>
     b.classList.toggle("active", b.getAttribute("data-tab") === tab));
   if (tab === "wird") renderWird();
@@ -5982,8 +6074,11 @@ function quranProgressPct(){
   const idx = qPages.indexOf(qCurrent);
   return idx < 0 ? 0 : Math.round(((idx + 1) / qPages.length) * 100);
 }
+/* وضع القارئ بملء الشاشة: يفعّله قارئا المصحف (تصفح/ورد) ويُلغيه ما عداهما */
+function setReaderMode(on){ document.body.classList.toggle("reader-on", !!on); }
 function renderQuran(){
   stopQuranObserver();
+  if (qView === "browse"){ renderBrowse(); return; }
   if (quranMode === "read" && qRange.from) renderQuranReader();
   else renderQuranHome();
 }
@@ -5992,7 +6087,10 @@ function quranSectionHeadHTML(){
     '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div>';
 }
 function renderQuranHome(){
-  let html = quranSectionHeadHTML() + '<div class="cards">';
+  setReaderMode(false);
+  /* تبويب المصحف بلا ترويسة عامة إطلاقاً (عنوان/تاريخ): مكررة مع شريط
+     القارئ الذي يعرض السورة ورقم الصفحة — يبدأ المحتوى مباشرة */
+  let html = kahfCardHTML() + '<div class="cards">';
   const range = getHomeRange();
   if (!range){
     html += '<article class="card read-card"><div class="card-main">' +
@@ -6000,7 +6098,14 @@ function renderQuranHome(){
       '<p class="read-text">خطة وردك — صفحات كل يوم وموضعك في الختمة — موجودة في بوت مُذَكِّرٌ على تيليجرام، حتى لا يكون للورد إعدادان في مكانين.</p>' +
       '<p class="virtue">افتح رسالة ورد اليوم في البوت واضغط «📖 اقرأ ورد اليوم في المصحف»، وسيفتح المصحف هنا على صفحات وردك مباشرة.</p>' +
       '</div></article>';
+    html += '<article class="card read-card"><div class="card-main">' +
+      '<h3 class="read-head">📖 تصفح المصحف بحرية</h3>' +
+      '<p class="virtue">المصحف كاملاً بين يديك في أي وقت: أي صفحة وبأي ترتيب، وموضع تصفحك محفوظ هنا — منفصل تماماً عن وردك.</p>' +
+      '<div class="q-actions"><button class="q-btn primary" type="button" id="qBrowseOpen">افتح المصحف</button></div>' +
+      '</div></article>';
     contentEl.innerHTML = html + '</div>';
+    bindKahf();
+    document.getElementById("qBrowseOpen").addEventListener("click", () => openBrowse(browsePage));
     return;
   }
   const resume = quranResumePage(range);
@@ -6014,8 +6119,15 @@ function renderQuranHome(){
     '<div class="q-actions">' +
     '<button class="q-btn primary" type="button" id="qReadToday">' + (partial ? 'أكمل القراءة' : 'اقرأ الورد') + '</button>' +
     '</div></div></article>';
+  html += '<article class="card read-card"><div class="card-main">' +
+    '<h3 class="read-head">📖 تصفح حر خارج الورد</h3>' +
+    '<p class="virtue">اقرأ أي صفحة من المصحف في أي وقت — موضع التصفح منفصل تماماً عن موضع ختمتك عند البوت.</p>' +
+    '<div class="q-actions"><button class="q-btn" type="button" id="qBrowseOpen">افتح التصفح الحر</button></div>' +
+    '</div></article>';
   html += '</div>';
   contentEl.innerHTML = html;
+  bindKahf();
+  document.getElementById("qBrowseOpen").addEventListener("click", () => openBrowse(browsePage));
   document.getElementById("qReadToday").addEventListener("click", () => {
     openQuranRange(range, resume);
   });
@@ -6029,7 +6141,10 @@ function mountQuranImg(wrap, p, attempt){
   img.setAttribute("loading", "lazy");
   img.setAttribute("decoding", "async");
   img.alt = "صفحة " + toAr(p) + " من المصحف";
-  img.addEventListener("load", () => { img.classList.add("loaded"); wrap.classList.remove("loading"); });
+  img.addEventListener("load", () => {
+    img.classList.add("loaded"); wrap.classList.remove("loading");
+    refreshMarker(wrap, p);
+  });
   img.addEventListener("error", () => {
     if (attempt < QIMG_BASES.length - 1){ mountQuranImg(wrap, p, attempt + 1); return; }
     wrap.classList.remove("loading");
@@ -6039,14 +6154,20 @@ function mountQuranImg(wrap, p, attempt){
   });
   img.src = quranImgUrl(p, attempt);
   wrap.appendChild(img);
+  attachPageTools(wrap, p);
 }
 function updateQuranHead(){
-  const pos = document.getElementById("qPos");
-  if (!pos || qCurrent == null) return;
+  if (qCurrent == null) return;
   const idx = qPages.indexOf(qCurrent);
-  pos.textContent = "صفحة " + toAr(qCurrent) +
-    (idx >= 0 ? " — " + toAr(idx + 1) + " من " + toAr(qPages.length) : "");
-  document.getElementById("qBar").style.width = quranProgressPct() + "%";
+  /* سطر المعلومات فوق الصورة: سورة | صفحة | جزء */
+  const sEl = document.getElementById("qSurah");
+  if (sEl) sEl.textContent = "سورة " + SURA_NAMES[suraOfPage(qCurrent)];
+  const pEl = document.getElementById("qPage");
+  if (pEl) pEl.textContent = "صفحة " + toAr(qCurrent);
+  const jEl = document.getElementById("qJuz");
+  if (jEl) jEl.textContent = "الجزء " + toAr(juzOfPage(qCurrent));
+  const bar = document.getElementById("qBar");
+  if (bar) bar.style.width = quranProgressPct() + "%";
   document.getElementById("qPrev").disabled = idx <= 0;
   document.getElementById("qNext").disabled = idx < 0 || idx >= qPages.length - 1;
 }
@@ -6054,41 +6175,62 @@ function quranGoTo(p){
   const el = document.getElementById("qp" + p);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+/* قارئ الورد بملء الشاشة: صفحة واحدة في كل مرة (أزرار/سحب RTL) والصورة
+   كاملة داخل الشاشة بلا تمرير؛ بانر الإتمام يظهر عند آخر صفحة فقط */
+function showWirdPage(p, dir){
+  if (!qPages.includes(p)) return;
+  const d = dir || 0;
+  qCurrent = p;
+  updateQuranHead();
+  scheduleMushafSave();
+  const wrap = document.getElementById("qWrap");
+  if (wrap){
+    mountQuranImg(wrap, p);
+    if (d){
+      wrap.classList.remove("b-anim-next", "b-anim-prev");
+      void wrap.offsetWidth;
+      wrap.classList.add(d > 0 ? "b-anim-next" : "b-anim-prev");
+    }
+  }
+  const end = document.getElementById("qEnd");
+  if (end) end.style.display = (p === qPages[qPages.length - 1]) ? "" : "none";
+}
 function renderQuranReader(startAt){
   stopQuranObserver();
   if (!qRange.from || !qPages.length){ quranMode = "home"; renderQuranHome(); return; }
+  setReaderMode(true);
   const f = qRange.from, t = qRange.to;
   qCurrent = qPages.includes(startAt) ? startAt
     : (botRange && qPages.includes(botRange.lastPage) ? botRange.lastPage : f);
-  let html = '<div class="q-head"><div class="q-head-row">' +
-    '<p class="q-head-title">ورد القرآن — صفحات ' + toAr(f) + ' – ' + toAr(t) + '</p>' +
-    '<p class="q-head-pos" id="qPos"></p></div>' +
-    '<div class="bar"><i id="qBar"></i></div>' +
-    '<div class="q-head-btns">' +
+  let html = '<div class="q-reader">' +
+    '<div class="q-info">' +
+    '<span class="q-info-surah" id="qSurah"></span>' +
+    '<span class="q-info-page" id="qPage"></span>' +
+    '<span class="q-info-juz" id="qJuz"></span></div>' +
+    '<div class="q-stage"><div class="q-page-card"><div class="q-img-wrap loading" id="qWrap"></div></div></div>' +
+    '<div class="done-banner q-end q-end-compact" id="qEnd" style="display:none"><p>أتممت ورد القرآن اليوم؟ علّمه في البوت بزر «📖 أتممت ورد القرآن» ليُحسب في يومك ويتقدّم موضعك في الختمة 🤲</p>' +
+    '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>' +
+    '<div class="q-dock"><div class="q-dock-btns">' +
     '<button class="q-btn" type="button" id="qPrev">السابق</button>' +
     '<button class="q-btn" type="button" id="qExit">إنهاء</button>' +
     '<button class="q-btn" type="button" id="qNext">التالي</button>' +
-    '</div></div><div id="qPages">';
-  qPages.forEach(p => {
-    html += '<section class="q-page" data-page="' + p + '" id="qp' + p + '">' +
-      '<span class="q-chip">صفحة ' + toAr(p) + '</span>' +
-      '<div class="q-page-card"><div class="q-img-wrap loading" data-wrap="' + p + '"></div></div>' +
-      '</section>';
-  });
-  html += '</div>' +
-    '<div class="done-banner q-end"><p>أتممت ورد القرآن اليوم؟ علّمه في البوت بزر «📖 أتممت ورد القرآن» ليُحسب في يومك ويتقدّم موضعك في الختمة 🤲</p>' +
-    '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>';
+    '<button class="q-btn" type="button" id="qToBrowse">تصفح حر</button>' +
+    '</div>' +
+    '<div class="bar"><i id="qBar"></i></div></div>' +
+    '</div>';
   contentEl.innerHTML = html;
-  contentEl.querySelectorAll(".q-img-wrap").forEach(wrap => {
-    mountQuranImg(wrap, +wrap.getAttribute("data-wrap"));
-  });
+  mountQuranImg(document.getElementById("qWrap"), qCurrent);
   document.getElementById("qPrev").addEventListener("click", () => {
     const i = qPages.indexOf(qCurrent);
-    if (i > 0) quranGoTo(qPages[i - 1]);
+    if (i > 0) showWirdPage(qPages[i - 1], -1);
   });
   document.getElementById("qNext").addEventListener("click", () => {
     const i = qPages.indexOf(qCurrent);
-    if (i >= 0 && i < qPages.length - 1) quranGoTo(qPages[i + 1]);
+    if (i >= 0 && i < qPages.length - 1) showWirdPage(qPages[i + 1], 1);
+  });
+  document.getElementById("qToBrowse").addEventListener("click", () => {
+    if (qCurrent != null && botRange){ botRange.lastPage = qCurrent; persistBotRange(); }
+    openBrowse(browsePage);
   });
   const exitFn = () => {
     if (qCurrent != null && botRange){ botRange.lastPage = qCurrent; persistBotRange(); }
@@ -6097,18 +6239,258 @@ function renderQuranReader(startAt){
   };
   document.getElementById("qExit").addEventListener("click", exitFn);
   document.getElementById("qEndExit").addEventListener("click", exitFn);
+  /* سحب RTL كالمصحف الورقي: إصبع نحو اليمين = التالي (يدخل من الشمال)،
+     ونحو اليسار = السابق (يدخل من اليمين) — متوافق مع اتجاه الأزرار */
+  const stage = document.getElementById("qWrap");
+  let qtx = null, qty = null;
+  stage.addEventListener("touchstart", ev => {
+    const tch = ev.changedTouches[0]; qtx = tch.clientX; qty = tch.clientY;
+  }, { passive: true });
+  stage.addEventListener("touchend", ev => {
+    if (qtx === null) return;
+    const tch = ev.changedTouches[0];
+    const dx = tch.clientX - qtx, dy = tch.clientY - qty;
+    qtx = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4){
+      const i = qPages.indexOf(qCurrent);
+      if (dx > 0 && i >= 0 && i < qPages.length - 1) showWirdPage(qPages[i + 1], 1);
+      else if (dx < 0 && i > 0) showWirdPage(qPages[i - 1], -1);
+    }
+  }, { passive: true });
   updateQuranHead();
-  qObserver = new IntersectionObserver(entries => {
-    entries.forEach(en => {
-      if (en.isIntersecting){
-        const p = +en.target.getAttribute("data-page");
-        if (p !== qCurrent){ qCurrent = p; updateQuranHead(); scheduleMushafSave(); }
-      }
-    });
-  }, { rootMargin: "-40% 0px -50% 0px", threshold: 0 });
-  contentEl.querySelectorAll(".q-page").forEach(el => qObserver.observe(el));
-  const target = document.getElementById("qp" + qCurrent);
-  if (target) requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+  const end0 = document.getElementById("qEnd");
+  if (end0) end0.style.display = (qCurrent === qPages[qPages.length - 1]) ? "" : "none";
+}
+
+/* ================= v5: التصفح الحر + علامة «هنا وقفت» + الكهف =================
+   مفاتيح تخزين مستقلة تماماً عن نموذج الورد (mudhakir_bot_range_v1):
+   mudhakir_browse_v1 = {page} — موضع التصفح الحر وحده؛ لا يقرأ botRange
+   ولا يكتب فيه أبداً، فموضع الختمة عند البوت لا يتأثر بالتصفح إطلاقاً.
+   mudhakir_marker_v1 = {page, y} — علامة «هنا وقفت» (y نسبة رأسية 0..1).
+   بيانات السور والصفحات أدناه مولّدة آلياً من AlQuran Cloud (نفس مصدر
+   آيات/تفسير البوت) ومُتحقق منها: بدايات السور في مصحف المدينة (الكهف
+   293)، ومدى كل صفحة [سورة أول آية، رقمها، سورة آخر آية، رقمها]. */
+const SURA_NAMES = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
+const SURA_STARTS = [1,2,50,77,106,128,151,177,187,208,221,235,249,255,262,267,282,293,305,312,322,332,342,350,359,367,377,385,396,404,411,415,418,428,434,440,446,453,458,467,477,483,489,496,499,502,507,511,515,518,520,523,526,528,531,534,537,542,545,549,551,553,554,556,558,560,562,564,566,568,570,572,574,575,577,578,580,582,583,585,586,587,587,589,590,591,591,592,593,594,595,595,596,596,597,597,598,598,599,599,600,600,601,601,601,602,602,602,603,603,603,604,604,604];
+const PAGE_SPANS = [[1,1,1,7],[2,1,2,5],[2,6,2,16],[2,17,2,24],[2,25,2,29],[2,30,2,37],[2,38,2,48],[2,49,2,57],[2,58,2,61],[2,62,2,69],[2,70,2,76],[2,77,2,83],[2,84,2,88],[2,89,2,93],[2,94,2,101],[2,102,2,105],[2,106,2,112],[2,113,2,119],[2,120,2,126],[2,127,2,134],[2,135,2,141],[2,142,2,145],[2,146,2,153],[2,154,2,163],[2,164,2,169],[2,170,2,176],[2,177,2,181],[2,182,2,186],[2,187,2,190],[2,191,2,196],[2,197,2,202],[2,203,2,210],[2,211,2,215],[2,216,2,219],[2,220,2,224],[2,225,2,230],[2,231,2,233],[2,234,2,237],[2,238,2,245],[2,246,2,248],[2,249,2,252],[2,253,2,256],[2,257,2,259],[2,260,2,264],[2,265,2,269],[2,270,2,274],[2,275,2,281],[2,282,2,282],[2,283,2,286],[3,1,3,9],[3,10,3,15],[3,16,3,22],[3,23,3,29],[3,30,3,37],[3,38,3,45],[3,46,3,52],[3,53,3,61],[3,62,3,70],[3,71,3,77],[3,78,3,83],[3,84,3,91],[3,92,3,100],[3,101,3,108],[3,109,3,115],[3,116,3,121],[3,122,3,132],[3,133,3,140],[3,141,3,148],[3,149,3,153],[3,154,3,157],[3,158,3,165],[3,166,3,173],[3,174,3,180],[3,181,3,186],[3,187,3,194],[3,195,3,200],[4,1,4,6],[4,7,4,11],[4,12,4,14],[4,15,4,19],[4,20,4,23],[4,24,4,26],[4,27,4,33],[4,34,4,37],[4,38,4,44],[4,45,4,51],[4,52,4,59],[4,60,4,65],[4,66,4,74],[4,75,4,79],[4,80,4,86],[4,87,4,91],[4,92,4,94],[4,95,4,101],[4,102,4,105],[4,106,4,113],[4,114,4,121],[4,122,4,127],[4,128,4,134],[4,135,4,140],[4,141,4,147],[4,148,4,154],[4,155,4,162],[4,163,4,170],[4,171,4,175],[4,176,5,2],[5,3,5,5],[5,6,5,9],[5,10,5,13],[5,14,5,17],[5,18,5,23],[5,24,5,31],[5,32,5,36],[5,37,5,41],[5,42,5,45],[5,46,5,50],[5,51,5,57],[5,58,5,64],[5,65,5,70],[5,71,5,76],[5,77,5,82],[5,83,5,89],[5,90,5,95],[5,96,5,103],[5,104,5,108],[5,109,5,113],[5,114,5,120],[6,1,6,8],[6,9,6,18],[6,19,6,27],[6,28,6,35],[6,36,6,44],[6,45,6,52],[6,53,6,59],[6,60,6,68],[6,69,6,73],[6,74,6,81],[6,82,6,90],[6,91,6,94],[6,95,6,101],[6,102,6,110],[6,111,6,118],[6,119,6,124],[6,125,6,131],[6,132,6,137],[6,138,6,142],[6,143,6,146],[6,147,6,151],[6,152,6,157],[6,158,6,165],[7,1,7,11],[7,12,7,22],[7,23,7,30],[7,31,7,37],[7,38,7,43],[7,44,7,51],[7,52,7,57],[7,58,7,67],[7,68,7,73],[7,74,7,81],[7,82,7,87],[7,88,7,95],[7,96,7,104],[7,105,7,120],[7,121,7,130],[7,131,7,137],[7,138,7,143],[7,144,7,149],[7,150,7,155],[7,156,7,159],[7,160,7,163],[7,164,7,170],[7,171,7,178],[7,179,7,187],[7,188,7,195],[7,196,7,206],[8,1,8,8],[8,9,8,16],[8,17,8,25],[8,26,8,33],[8,34,8,40],[8,41,8,45],[8,46,8,52],[8,53,8,61],[8,62,8,69],[8,70,8,75],[9,1,9,6],[9,7,9,13],[9,14,9,20],[9,21,9,26],[9,27,9,31],[9,32,9,36],[9,37,9,40],[9,41,9,47],[9,48,9,54],[9,55,9,61],[9,62,9,68],[9,69,9,72],[9,73,9,79],[9,80,9,86],[9,87,9,93],[9,94,9,99],[9,100,9,106],[9,107,9,111],[9,112,9,117],[9,118,9,122],[9,123,9,129],[10,1,10,6],[10,7,10,14],[10,15,10,20],[10,21,10,25],[10,26,10,33],[10,34,10,42],[10,43,10,53],[10,54,10,61],[10,62,10,70],[10,71,10,78],[10,79,10,88],[10,89,10,97],[10,98,10,106],[10,107,11,5],[11,6,11,12],[11,13,11,19],[11,20,11,28],[11,29,11,37],[11,38,11,45],[11,46,11,53],[11,54,11,62],[11,63,11,71],[11,72,11,81],[11,82,11,88],[11,89,11,97],[11,98,11,108],[11,109,11,117],[11,118,12,4],[12,5,12,14],[12,15,12,22],[12,23,12,30],[12,31,12,37],[12,38,12,43],[12,44,12,52],[12,53,12,63],[12,64,12,69],[12,70,12,78],[12,79,12,86],[12,87,12,95],[12,96,12,103],[12,104,12,111],[13,1,13,5],[13,6,13,13],[13,14,13,18],[13,19,13,28],[13,29,13,34],[13,35,13,42],[13,43,14,5],[14,6,14,10],[14,11,14,18],[14,19,14,24],[14,25,14,33],[14,34,14,42],[14,43,14,52],[15,1,15,15],[15,16,15,31],[15,32,15,51],[15,52,15,70],[15,71,15,90],[15,91,16,6],[16,7,16,14],[16,15,16,26],[16,27,16,34],[16,35,16,42],[16,43,16,54],[16,55,16,64],[16,65,16,72],[16,73,16,79],[16,80,16,87],[16,88,16,93],[16,94,16,102],[16,103,16,110],[16,111,16,118],[16,119,16,128],[17,1,17,7],[17,8,17,17],[17,18,17,27],[17,28,17,38],[17,39,17,49],[17,50,17,58],[17,59,17,66],[17,67,17,75],[17,76,17,86],[17,87,17,96],[17,97,17,104],[17,105,18,4],[18,5,18,15],[18,16,18,20],[18,21,18,27],[18,28,18,34],[18,35,18,45],[18,46,18,53],[18,54,18,61],[18,62,18,74],[18,75,18,83],[18,84,18,97],[18,98,18,110],[19,1,19,11],[19,12,19,25],[19,26,19,38],[19,39,19,51],[19,52,19,64],[19,65,19,76],[19,77,19,95],[19,96,20,12],[20,13,20,37],[20,38,20,51],[20,52,20,64],[20,65,20,76],[20,77,20,87],[20,88,20,98],[20,99,20,113],[20,114,20,125],[20,126,20,135],[21,1,21,10],[21,11,21,24],[21,25,21,35],[21,36,21,44],[21,45,21,57],[21,58,21,72],[21,73,21,81],[21,82,21,90],[21,91,21,101],[21,102,21,112],[22,1,22,5],[22,6,22,15],[22,16,22,23],[22,24,22,30],[22,31,22,38],[22,39,22,46],[22,47,22,55],[22,56,22,64],[22,65,22,72],[22,73,22,78],[23,1,23,17],[23,18,23,27],[23,28,23,42],[23,43,23,59],[23,60,23,74],[23,75,23,89],[23,90,23,104],[23,105,23,118],[24,1,24,10],[24,11,24,20],[24,21,24,27],[24,28,24,31],[24,32,24,36],[24,37,24,43],[24,44,24,53],[24,54,24,58],[24,59,24,61],[24,62,25,2],[25,3,25,11],[25,12,25,20],[25,21,25,32],[25,33,25,43],[25,44,25,55],[25,56,25,67],[25,68,25,77],[26,1,26,19],[26,20,26,39],[26,40,26,60],[26,61,26,83],[26,84,26,111],[26,112,26,136],[26,137,26,159],[26,160,26,183],[26,184,26,206],[26,207,26,227],[27,1,27,13],[27,14,27,22],[27,23,27,35],[27,36,27,44],[27,45,27,55],[27,56,27,63],[27,64,27,76],[27,77,27,88],[27,89,28,5],[28,6,28,13],[28,14,28,21],[28,22,28,28],[28,29,28,35],[28,36,28,43],[28,44,28,50],[28,51,28,59],[28,60,28,70],[28,71,28,77],[28,78,28,84],[28,85,29,6],[29,7,29,14],[29,15,29,23],[29,24,29,30],[29,31,29,38],[29,39,29,45],[29,46,29,52],[29,53,29,63],[29,64,30,5],[30,6,30,15],[30,16,30,24],[30,25,30,32],[30,33,30,41],[30,42,30,50],[30,51,30,60],[31,1,31,11],[31,12,31,19],[31,20,31,28],[31,29,31,34],[32,1,32,11],[32,12,32,20],[32,21,32,30],[33,1,33,6],[33,7,33,15],[33,16,33,22],[33,23,33,30],[33,31,33,35],[33,36,33,43],[33,44,33,50],[33,51,33,54],[33,55,33,62],[33,63,33,73],[34,1,34,7],[34,8,34,14],[34,15,34,22],[34,23,34,31],[34,32,34,39],[34,40,34,48],[34,49,35,3],[35,4,35,11],[35,12,35,18],[35,19,35,30],[35,31,35,38],[35,39,35,44],[35,45,36,12],[36,13,36,27],[36,28,36,40],[36,41,36,54],[36,55,36,70],[36,71,36,83],[37,1,37,24],[37,25,37,51],[37,52,37,76],[37,77,37,102],[37,103,37,126],[37,127,37,153],[37,154,37,182],[38,1,38,16],[38,17,38,26],[38,27,38,42],[38,43,38,61],[38,62,38,83],[38,84,39,5],[39,6,39,10],[39,11,39,21],[39,22,39,31],[39,32,39,40],[39,41,39,47],[39,48,39,56],[39,57,39,67],[39,68,39,74],[39,75,40,7],[40,8,40,16],[40,17,40,25],[40,26,40,33],[40,34,40,40],[40,41,40,49],[40,50,40,58],[40,59,40,66],[40,67,40,77],[40,78,40,85],[41,1,41,11],[41,12,41,20],[41,21,41,29],[41,30,41,38],[41,39,41,46],[41,47,41,54],[42,1,42,10],[42,11,42,15],[42,16,42,22],[42,23,42,31],[42,32,42,44],[42,45,42,51],[42,52,43,10],[43,11,43,22],[43,23,43,33],[43,34,43,47],[43,48,43,60],[43,61,43,73],[43,74,43,89],[44,1,44,18],[44,19,44,39],[44,40,44,59],[45,1,45,13],[45,14,45,22],[45,23,45,32],[45,33,46,5],[46,6,46,14],[46,15,46,20],[46,21,46,28],[46,29,46,35],[47,1,47,11],[47,12,47,19],[47,20,47,29],[47,30,47,38],[48,1,48,9],[48,10,48,15],[48,16,48,23],[48,24,48,28],[48,29,49,4],[49,5,49,11],[49,12,49,18],[50,1,50,15],[50,16,50,35],[50,36,51,6],[51,7,51,30],[51,31,51,51],[51,52,52,14],[52,15,52,31],[52,32,52,49],[53,1,53,26],[53,27,53,44],[53,45,54,6],[54,7,54,27],[54,28,54,49],[54,50,55,16],[55,17,55,40],[55,41,55,67],[55,68,56,16],[56,17,56,50],[56,51,56,76],[56,77,57,3],[57,4,57,11],[57,12,57,18],[57,19,57,24],[57,25,57,29],[58,1,58,6],[58,7,58,11],[58,12,58,21],[58,22,59,3],[59,4,59,9],[59,10,59,16],[59,17,59,24],[60,1,60,5],[60,6,60,11],[60,12,61,5],[61,6,61,14],[62,1,62,8],[62,9,63,4],[63,5,63,11],[64,1,64,9],[64,10,64,18],[65,1,65,5],[65,6,65,12],[66,1,66,7],[66,8,66,12],[67,1,67,12],[67,13,67,26],[67,27,68,15],[68,16,68,42],[68,43,69,8],[69,9,69,34],[69,35,70,10],[70,11,70,39],[70,40,71,10],[71,11,71,28],[72,1,72,13],[72,14,72,28],[73,1,73,19],[73,20,74,17],[74,18,74,47],[74,48,75,19],[75,20,76,5],[76,6,76,25],[76,26,77,19],[77,20,77,50],[78,1,78,30],[78,31,79,15],[79,16,79,46],[80,1,80,42],[81,1,81,29],[82,1,83,6],[83,7,83,34],[83,35,84,25],[85,1,85,22],[86,1,87,15],[87,16,88,26],[89,1,89,23],[89,24,90,20],[91,1,92,14],[92,15,94,8],[95,1,96,19],[97,1,98,7],[98,8,100,9],[100,10,102,8],[103,1,105,5],[106,1,108,3],[109,1,111,5],[112,1,114,6]];
+const BROWSE_KEY = "mudhakir_browse_v1";
+const MARKER_KEY = "mudhakir_marker_v1";
+let qView = "browse"; /* wird | browse — يُضبط نهائياً في init من وجود مدى ورد */
+let browsePage = 1;
+let marker = null;
+
+function suraOfPage(p){
+  let s = 0;
+  for (let i = 0; i < 114; i++){ if (SURA_STARTS[i] <= p) s = i; else break; }
+  return s; /* فهرس 0..113 */
+}
+/* بدايات الأجزاء الثلاثين في مصحف المدينة (جدول قياسي) */
+const JUZ_STARTS = [1,22,42,62,82,102,122,142,162,182,202,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
+function juzOfPage(p){
+  let j = 0;
+  for (let i = 0; i < 30; i++){ if (JUZ_STARTS[i] <= p) j = i; else break; }
+  return j + 1; /* 1..30 */
+}
+function pageSpanText(p){
+  const sp = PAGE_SPANS[p - 1];
+  if (!sp) return "";
+  if (sp[0] === sp[2])
+    return "سورة " + SURA_NAMES[sp[0] - 1] + " — الآيات " + toAr(sp[1]) + "–" + toAr(sp[3]);
+  return "من " + SURA_NAMES[sp[0] - 1] + " " + toAr(sp[1]) +
+    " إلى " + SURA_NAMES[sp[2] - 1] + " " + toAr(sp[3]);
+}
+function loadBrowse(){
+  try{
+    const b = JSON.parse(localStorage.getItem(BROWSE_KEY) || "null");
+    if (b && validPage(+b.page)) browsePage = +b.page;
+  }catch(e){/* التخزين غير متاح */}
+  loadMarker();
+}
+function persistBrowse(){
+  try{ localStorage.setItem(BROWSE_KEY, JSON.stringify({ page: browsePage })); }catch(e){}
+}
+function loadMarker(){
+  try{
+    const m = JSON.parse(localStorage.getItem(MARKER_KEY) || "null");
+    if (m && validPage(+m.page) && typeof m.y === "number" && m.y >= 0 && m.y <= 1)
+      marker = { page: +m.page, y: m.y };
+  }catch(e){/* التخزين غير متاح */}
+}
+function persistMarker(){
+  try{ if (marker) localStorage.setItem(MARKER_KEY, JSON.stringify(marker)); }catch(e){}
+}
+
+/* ----- علامة «هنا وقفت»: ضغطة طويلة على صورة أي صفحة (القارئان) ----- */
+function renderMarkerInto(wrap, p){
+  if (!marker || marker.page !== p) return;
+  const d = document.createElement("div");
+  d.className = "q-marker";
+  /* الموضع يُحسب من صندوق الصورة نفسها لا من الحاوية: في قارئ ملء الشاشة
+     قد تزيد الحاوية عن الصورة (حشو علوي/سفلي)، فالنسبة من الصورة أدق */
+  const img = wrap.querySelector("img");
+  if (img && img.offsetHeight > 0)
+    d.style.top = (img.offsetTop + marker.y * img.offsetHeight) + "px";
+  else
+    d.style.top = (marker.y * 100) + "%";
+  d.innerHTML = "<i></i><span>🔖 هنا وقفت — صفحة " + toAr(p) + " · " + esc(pageSpanText(p)) + "</span>";
+  wrap.appendChild(d);
+}
+function refreshMarker(wrap, p){
+  wrap.querySelectorAll(".q-marker").forEach(el => el.remove());
+  renderMarkerInto(wrap, p);
+}
+function showMarkerToast(){
+  let t = document.getElementById("mkToast");
+  if (!t){
+    t = document.createElement("div");
+    t.id = "mkToast"; t.className = "mk-toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = "🔖 اتعلّمت علامة «هنا وقفت» على صفحة " + toAr(marker.page);
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+function attachPageTools(wrap, p){
+  renderMarkerInto(wrap, p);
+  let timer = null, sx = 0, sy = 0;
+  wrap.addEventListener("pointerdown", ev => {
+    sx = ev.clientX; sy = ev.clientY;
+    timer = setTimeout(() => {
+      timer = null;
+      const img = wrap.querySelector("img");
+      const rect = (img && img.getBoundingClientRect().height > 0)
+        ? img.getBoundingClientRect() : wrap.getBoundingClientRect();
+      const y = Math.min(0.98, Math.max(0.02, (sy - rect.top) / rect.height));
+      marker = { page: p, y: Math.round(y * 1000) / 1000 };
+      persistMarker();
+      document.querySelectorAll(".q-marker").forEach(el => el.remove());
+      renderMarkerInto(wrap, p);
+      showMarkerToast();
+    }, 550);
+  });
+  wrap.addEventListener("pointermove", ev => {
+    if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)){
+      clearTimeout(timer); timer = null;
+    }
+  });
+  ["pointerup", "pointercancel"].forEach(tn =>
+    wrap.addEventListener(tn, () => { if (timer){ clearTimeout(timer); timer = null; } }));
+}
+
+/* ----- بطاقة الكهف: يوم الجمعة فقط، أعلى تبويب المصحف ----- */
+function isFridayToday(){ return new Date().getDay() === 5; }
+function kahfCardHTML(){
+  if (!isFridayToday()) return "";
+  return '<article class="card read-card kahf-card"><div class="card-main">' +
+    '<h3 class="read-head">🕌 اليوم الجمعة — سورة الكهف</h3>' +
+    '<p class="virtue">من سنن يوم الجمعة قراءة سورة الكهف (الصفحات ' + toAr(293) + '–' + toAr(304) + ' في مصحف المدينة).</p>' +
+    '<div class="q-actions"><button class="q-btn primary" type="button" id="kahfGo">📖 اقرأها الآن</button></div>' +
+    '</div></article>';
+}
+function bindKahf(){
+  const b = document.getElementById("kahfGo");
+  if (b) b.addEventListener("click", () => openBrowse(293));
+}
+
+/* ----- وضع التصفح الحر ----- */
+function openBrowse(p){
+  qView = "browse";
+  if (validPage(p)) browsePage = p;
+  persistBrowse();
+  if (currentTab !== "quran"){ switchTab("quran"); return; }
+  renderQuran();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+/* سطر معلومات التصفح فوق الصورة: سورة | صفحة | جزء — لصفحة معيّنة */
+function setBrowseInfo(p){
+  const s = document.getElementById("bSurah");
+  if (s) s.textContent = "سورة " + SURA_NAMES[suraOfPage(p)];
+  const pg = document.getElementById("bPage");
+  if (pg) pg.textContent = "صفحة " + toAr(p);
+  const j = document.getElementById("bJuz");
+  if (j) j.textContent = "الجزء " + toAr(juzOfPage(p));
+}
+function updateBrowseHead(){
+  if (!document.getElementById("bPage")) return;
+  setBrowseInfo(browsePage);
+  document.getElementById("bPrev").disabled = browsePage <= 1;
+  document.getElementById("bNext").disabled = browsePage >= 604;
+}
+function browseGo(p, dir){
+  p = Math.min(604, Math.max(1, p));
+  const d = dir || (p > browsePage ? 1 : -1);
+  browsePage = p;
+  persistBrowse();
+  updateBrowseHead();
+  const chip = document.getElementById("bChip");
+  if (chip) chip.textContent = "صفحة " + toAr(p);
+  const wrap = document.getElementById("bWrap");
+  if (wrap){
+    mountQuranImg(wrap, p);
+    wrap.classList.remove("b-anim-next", "b-anim-prev");
+    void wrap.offsetWidth;
+    wrap.classList.add(d > 0 ? "b-anim-next" : "b-anim-prev");
+  }
+  [p - 1, p + 1].forEach(n => {
+    if (validPage(n)){ const im = new Image(); im.src = quranImgUrl(n); }
+  });
+}
+function renderBrowse(){
+  setReaderMode(true);
+  let html = '<div class="q-reader">' + kahfCardHTML() +
+    '<div class="q-info">' +
+    '<span class="q-info-surah" id="bSurah"></span>' +
+    '<span class="q-info-page" id="bPage"></span>' +
+    '<span class="q-info-juz" id="bJuz"></span></div>' +
+    '<div class="q-stage"><div class="q-page-card"><div class="q-img-wrap loading" id="bWrap"></div></div></div>' +
+    '<div class="q-dock">' +
+    '<div class="b-picker" id="bPicker" hidden>' +
+    SURA_NAMES.map((n, i) => '<button class="b-surah" type="button" data-surah="' + i + '"><span>' + esc(n) + '</span><span class="b-surah-pg">صفحة ' + toAr(SURA_STARTS[i]) + '</span></button>').join("") +
+    '</div>' +
+    '<div class="q-dock-btns">' +
+    '<button class="q-btn" type="button" id="bPrev">السابق</button>' +
+    '<button class="q-btn" type="button" id="bSurahBtn">السورة ▾</button>' +
+    '<button class="q-btn" type="button" id="bNext">التالي</button>' +
+    (botRange ? '<button class="q-btn" type="button" id="bToWird">الورد</button>' : '') +
+    '</div>' +
+    '</div>' +
+    '</div>';
+  contentEl.innerHTML = html;
+  bindKahf();
+  mountQuranImg(document.getElementById("bWrap"), browsePage);
+  [browsePage - 1, browsePage + 1].forEach(n => {
+    if (validPage(n)){ const im = new Image(); im.src = quranImgUrl(n); }
+  });
+  document.getElementById("bPrev").addEventListener("click", () => browseGo(browsePage - 1, -1));
+  document.getElementById("bNext").addEventListener("click", () => browseGo(browsePage + 1, 1));
+  const picker = document.getElementById("bPicker");
+  document.getElementById("bSurahBtn").addEventListener("click", () => { picker.hidden = !picker.hidden; });
+  picker.querySelectorAll("[data-surah]").forEach(b => b.addEventListener("click", () => {
+    picker.hidden = true;
+    browseGo(SURA_STARTS[+b.getAttribute("data-surah")]);
+  }));
+  const tw = document.getElementById("bToWird");
+  if (tw) tw.addEventListener("click", () => {
+    qView = "wird"; renderQuran();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  const stage = document.getElementById("bWrap");
+  let tx = null, ty = null;
+  stage.addEventListener("touchstart", ev => {
+    const t = ev.changedTouches[0]; tx = t.clientX; ty = t.clientY;
+  }, { passive: true });
+  stage.addEventListener("touchend", ev => {
+    if (tx === null) return;
+    const t = ev.changedTouches[0];
+    const dx = t.clientX - tx, dy = t.clientY - ty;
+    tx = null;
+    /* اتجاه RTL كالمصحف الورقي: سحب الإصبع نحو اليمين = الصفحة التالية
+       (تدخل منزلقة من الشمال)، ونحو اليسار = السابقة (من اليمين) */
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4){
+      if (dx > 0) browseGo(browsePage + 1, 1); else browseGo(browsePage - 1, -1);
+    }
+  }, { passive: true });
+  updateBrowseHead();
 }
 
 /* ================= متفرّقة (بلا عدّادات — تصفّح وبحث) ================= */
@@ -6297,6 +6679,8 @@ function init(){
   initTheme();
   initCounts();
   loadBotRange();
+  loadBrowse();
+  qView = botRange ? "wird" : "browse";
   document.querySelectorAll(".nav-btn").forEach(b =>
     b.addEventListener("click", () => switchTab(b.getAttribute("data-tab"))));
   let initial = "athkar";
@@ -6308,7 +6692,16 @@ function init(){
     else if (t && TABS.includes(t)) initial = t;
     const f = parseInt(params.get("from"), 10);
     const tt = parseInt(params.get("to"), 10);
-    if (t === "quran"){
+    if (params.get("mode") === "browse"){
+      /* عقد الجولة الثانية: ?mode=browse&page=N — تصفح حر على صفحة
+         بعينها (زر الكهف في البوت)، فوق منطق مدى الورد القائم كما هو */
+      initial = "quran";
+      qView = "browse";
+      const pg = parseInt(params.get("page"), 10);
+      if (validPage(pg)){ browsePage = pg; persistBrowse(); }
+      if (validRange(f, tt)) cacheBotRange(f, tt);
+    } else if (t === "quran"){
+      qView = "wird";
       applyDeepLinkRange(f, tt);
     } else if (validRange(f, tt)){
       cacheBotRange(f, tt);
