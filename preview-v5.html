@@ -248,12 +248,16 @@
   @keyframes bslideR{from{transform:translateX(26px); opacity:.35;} to{transform:translateX(0); opacity:1;}}
   .b-anim-next{animation:bslideL .28s ease;}
   .b-anim-prev{animation:bslideR .28s ease;}
-  /* ===== قارئ المصحف بملء الشاشة (إصلاح الارتفاع): عند تفعيل أي قارئ
-     (تصفح حر أو ورد) تنكمش الترويسة العامة إلى سطر نحيف، وتصير الحاوية
-     بملء 100dvh بلا أي تمرير طولي، ومنطقة صورة الصفحة تأخذ كل الباقي.
-     خصم التنقل 70px لا 57: الارتفاع الفعلي المقاس لشريط التنقل 64px،
-     والباقي هامش أمان حتى لا تلتصق كتلة تنقّل القارئ بالشريط أو تُقصّ
-     (قياس headless 2026-11-12: بهامش ~6px في كل المقاسات) ===== */
+  /* ===== قارئ المصحف بملء الشاشة (إصلاح الارتفاع ثم جولة التكبير —
+     قرار محمد 2026-11-12: «كلما أخذ المصحف حيزاً أكبر من الشاشة كان
+     أفضل»): عند تفعيل أي قارئ (تصفح حر أو ورد) تنكمش الترويسة العامة
+     إلى سطر نحيف، وتصير الحاوية بملء 100dvh وتمتد منطقة القراءة بعرض
+     الشاشة كاملاً حتى شريط تنقّل التطبيق (خصم التنقل 70px لا 57:
+     الارتفاع الفعلي المقاس لشريط التنقل 64px والباقي هامش أمان).
+     الخيارات (سطر المعلومات + كتلة التنقّل) طبقات عائمة فوق الصورة في
+     الوضعين وتختفي تلقائياً أثناء القراءة (الكتلة التالية)، فالطولي:
+     أقصى عرض مع سقف ارتفاع يمنع أي تمرير طولي مهما كان المقاس؛
+     والأفقي: عرض الشاشة كاملاً مع تمرير داخلي (كتلة الأفقي أدناه) ===== */
   body.reader-on{overflow:hidden; padding-bottom:0;}
   body.reader-on header .header-in{padding:4px 16px; min-height:0;}
   body.reader-on .brand{font-size:19px;}
@@ -262,65 +266,96 @@
     height:calc(100vh - 45px - 70px - env(safe-area-inset-bottom));
     height:calc(100dvh - 45px - 70px - env(safe-area-inset-bottom));
     display:flex; flex-direction:column;
+    /* تكبير: لا حدّ أقصى لعرض الحاوية ولا هوامش جانبية أثناء القراءة */
+    max-width:none; padding-left:0; padding-right:0;
   }
   body.reader-on footer{display:none;}
   body.reader-on #content{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
-  .q-reader{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; padding-top:4px;}
+  .q-reader{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; padding-top:4px; position:relative;}
   .q-stage{flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;}
   .q-stage .q-page-card{
-    height:100%; max-height:100%; max-width:100%; padding:6px;
+    /* إطار البطاقة وحشوتها أُزيلا نهائياً: الصورة من الحافة للحافة */
+    height:100%; max-height:100%; width:100%; max-width:100%; padding:0;
+    border:none; border-radius:0; box-shadow:none; background:transparent;
     display:flex; align-items:center; justify-content:center;
   }
   .q-stage .q-img-wrap{
-    height:100%; max-height:100%; max-width:100%;
+    height:100%; max-height:100%; width:100%; max-width:100%; border-radius:0;
     display:flex; align-items:center; justify-content:center;
   }
   .q-stage .q-page-img{
-    width:auto; height:auto; max-width:100%; max-height:100%;
+    /* أقصى حجم في الطولي: العرض كاملاً، والارتفاع مسقوف بارتفاع المنطقة
+       فتُصغَّر الصورة عند اللزوم ولا تُقصّ ولا تُمرَّر أبداً، وتتوسّط
+       عمودياً داخل الحاوية (flex) */
+    width:100%; height:auto; max-width:100%; max-height:100%;
     object-fit:contain; aspect-ratio:auto;
   }
   .q-reader .q-chip{display:none;}
   .q-end-compact{flex:0 0 auto; margin:0; padding:8px 12px; font-size:13px;}
   .q-end-compact .q-actions{margin-top:6px;}
   .q-end-compact .q-btn{min-height:33px; padding:3px 14px; font-size:13px;}
-  /* الوضع الأفقي القصير داخل قارئ المصحف فقط (إصلاح الأفقي بعد النشر —
-     لقطة هاتف محمد 2026-11-12: الصورة كانت 61–63% فقط من الارتفاع المتاح
-     لأن الترويسة وسطر المعلومات وكتلة التنقل يخصمون منها): الترويسة العامة
-     تختفي نهائياً، وسطر المعلومات وكتلة التنقل وبطاقة الكهف وبانر إتمام
-     الورد طبقات عائمة فوق منطقة الصورة (لا تخصم من ارتفاعها)، وإطار بطاقة
-     الصفحة يُصفَّر — فتأخذ الصورة كل الارتفاع من أعلى الشاشة إلى شريط
-     تنقّل التطبيق الذي يبقى ظاهراً كما هو. الطولي لا يتغيّر إطلاقاً. */
+  /* ===== طبقات عائمة + إخفاء تلقائي (قرار محمد 2026-11-12) =====
+     سطر المعلومات وكتلة التنقّل وبطاقة الكهف وبانر إتمام الورد طبقات
+     عائمة فوق الصورة في الوضعين الطولي والأفقي معاً — لا تخصم بكسلًا
+     واحداً من حجم المصحف. و«الخيارات» (المعلومات + التنقّل) تختفي
+     تلقائياً بعد ~٣ ثوانٍ من عدم التفاعل: initReaderChrome تضيف
+     .controls-hidden فتتلاشى الطبقتان تماماً (شفافية + visibility)
+     وتكفّان عن اعتراض اللمس، ونقرة واحدة على الصفحة تبدّل إظهارها —
+     فيأخذ المصحف الشاشة كاملة حرفياً أثناء القراءة */
+  body.reader-on .q-info{
+    position:absolute; top:6px; inset-inline:10px; z-index:30;
+    padding:4px 14px; border-radius:99px; font-size:11.5px;
+    background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--border); box-shadow:var(--shadow);
+    transition:opacity .25s ease, visibility .25s ease;
+  }
+  body.reader-on .q-dock{
+    position:absolute; bottom:6px; inset-inline:10px;
+    transition:opacity .25s ease, visibility .25s ease;
+  }
+  body.reader-on .q-reader.controls-hidden .q-info,
+  body.reader-on .q-reader.controls-hidden .q-dock{
+    opacity:0; visibility:hidden; pointer-events:none;
+  }
+  body.reader-on .kahf-card{
+    position:absolute; top:44px; inset-inline:10px; z-index:25;
+    margin:0; padding:10px 14px;
+  }
+  body.reader-on .kahf-card .read-head{font-size:14.5px; margin:0;}
+  body.reader-on .kahf-card .virtue{font-size:12px; line-height:1.7; margin:0;}
+  body.reader-on .kahf-card .q-actions{margin-top:6px;}
+  body.reader-on .kahf-card .q-btn{min-height:36px; padding:4px 16px;}
+  body.reader-on .q-end-compact{
+    position:absolute; bottom:58px; inset-inline:10px; z-index:35; margin:0;
+  }
+  /* الوضع الأفقي القصير داخل قارئ المصحف فقط: الترويسة العامة تختفي
+     نهائياً، والطبقات العائمة كما في الكتلة السابقة (موحّدة للوضعين)،
+     ومنطقة القراءة من أعلى الشاشة إلى شريط تنقّل التطبيق الذي يبقى
+     ظاهراً كما هو. وتكبير الأفقي (قرار محمد 2026-11-12): صورة الصفحة
+     بعرض الشاشة كاملاً وارتفاعها الطبيعي أكبر من الشاشة، فتُقرأ بخط
+     كبير مع تمرير طولي داخل منطقة القراءة فقط — و«لا تمرير» كانت
+     للوضع العادي وحده. touch-action: pan-y يجعل التمرير الطولي
+     أصلياً من المتصفح ويُبقي السحب الأفقي لقلب الصفحات بيد JS */
   @media (orientation: landscape) and (max-height: 520px){
     body.reader-on header{display:none;}
     body.reader-on main.wrap{
       height:calc(100vh - 70px - env(safe-area-inset-bottom));
       height:calc(100dvh - 70px - env(safe-area-inset-bottom));
     }
-    body.reader-on .q-reader{position:relative; gap:0; padding-top:0;}
-    body.reader-on .q-info{
-      position:absolute; top:6px; inset-inline:10px; z-index:30;
-      padding:4px 14px; border-radius:99px; font-size:11.5px;
-      background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-      border:1px solid var(--border); box-shadow:var(--shadow);
-    }
-    body.reader-on .q-dock{
-      position:absolute; bottom:6px; inset-inline:10px; z-index:40;
-      padding:4px 8px 5px;
-    }
+    body.reader-on .q-reader{gap:0; padding-top:0;}
+    body.reader-on .q-dock{padding:4px 8px 5px;}
     body.reader-on .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
     body.reader-on .b-picker{max-height:150px;}
-    body.reader-on .q-stage .q-page-card{padding:0; border:none; border-radius:0; box-shadow:none; background:transparent;}
-    body.reader-on .q-stage .q-img-wrap{border-radius:0;}
-    body.reader-on .kahf-card{
-      position:absolute; top:40px; inset-inline:10px; z-index:25;
-      margin:0; padding:10px 14px; gap:6px;
+    body.reader-on .q-stage{
+      display:block; overflow-y:auto; overflow-x:hidden;
+      touch-action:pan-y; overscroll-behavior:contain; scrollbar-width:none;
     }
-    body.reader-on .kahf-card .read-head{font-size:14.5px; margin:0;}
-    body.reader-on .kahf-card .virtue{font-size:12px; line-height:1.7; margin:0;}
-    body.reader-on .kahf-card .q-actions{margin-top:6px;}
-    body.reader-on .kahf-card .q-btn{min-height:36px; padding:4px 16px;}
-    body.reader-on .q-end-compact{
-      position:absolute; bottom:58px; inset-inline:10px; z-index:35; margin:0;
+    body.reader-on .q-stage::-webkit-scrollbar{display:none;}
+    body.reader-on .q-stage .q-page-card{display:block; height:auto; max-height:none; width:100%;}
+    body.reader-on .q-stage .q-img-wrap{display:block; height:auto; max-height:none; width:100%; touch-action:pan-y;}
+    body.reader-on .q-stage .q-page-img{
+      width:100%; height:auto; max-width:100%; max-height:none;
+      aspect-ratio:1260/2038; touch-action:pan-y;
     }
   }
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
@@ -6159,6 +6194,9 @@ function renderQuranHome(){
 }
 function mountQuranImg(wrap, p, attempt){
   attempt = attempt || 0;
+  /* صفحة جديدة تبدأ من أعلى منطقة القراءة (يهمّ في الأفقي القابل للتمرير) */
+  const stg = wrap.closest ? wrap.closest(".q-stage") : null;
+  if (stg) stg.scrollTop = 0;
   wrap.classList.add("loading");
   wrap.innerHTML = "";
   const img = document.createElement("img");
@@ -6285,6 +6323,7 @@ function renderQuranReader(startAt){
   updateQuranHead();
   const end0 = document.getElementById("qEnd");
   if (end0) end0.style.display = (qCurrent === qPages[qPages.length - 1]) ? "" : "none";
+  initReaderChrome(contentEl.querySelector(".q-reader"));
 }
 
 /* ================= v5: التصفح الحر + علامة «هنا وقفت» + الكهف =================
@@ -6402,6 +6441,49 @@ function attachPageTools(wrap, p){
     wrap.addEventListener(tn, () => { if (timer){ clearTimeout(timer); timer = null; } }));
 }
 
+/* ----- طبقات القارئ العائمة: إخفاء تلقائي + تبديل بالنقرة -----
+   الخيارات (سطر المعلومات + كتلة التنقّل) ظاهرة عند دخول القارئ ثم
+   تختفي تلقائياً بعد ٣ ثوانٍ من عدم التفاعل؛ وأي تفاعل (لمس/ضغط زر/
+   تمرير/سحب) يعيد ضبط العدّاد ما دامت ظاهرة. ونقرة واحدة على الصفحة
+   تبدّل إظهارها — مميَّزة عن السحب (>10px) والضغطة الطويلة (>350ms)
+   والتمرير الطولي في الأفقي (pointercancel) بعتبات الحركة والزمن */
+function initReaderChrome(readerEl){
+  if (!readerEl) return;
+  let timer = null;
+  const arm = () => {
+    clearTimeout(timer); timer = null;
+    if (readerEl.classList.contains("controls-hidden")) return;
+    timer = setTimeout(() => readerEl.classList.add("controls-hidden"), 3000);
+  };
+  ["touchstart", "pointerdown", "click", "wheel"].forEach(tn =>
+    readerEl.addEventListener(tn, arm, { capture: true, passive: true }));
+  readerEl.addEventListener("scroll", arm, { capture: true, passive: true });
+  const stage = readerEl.querySelector(".q-stage");
+  if (stage){
+    let px = null, py = null, pt = 0;
+    stage.addEventListener("pointerdown", ev => {
+      px = ev.clientX; py = ev.clientY; pt = Date.now();
+    }, { passive: true });
+    stage.addEventListener("pointerup", ev => {
+      if (px === null) return;
+      const moved = Math.hypot(ev.clientX - px, ev.clientY - py);
+      const dt = Date.now() - pt;
+      px = null;
+      if (moved < 10 && dt < 350){
+        if (readerEl.classList.contains("controls-hidden")){
+          readerEl.classList.remove("controls-hidden");
+          arm();
+        } else {
+          clearTimeout(timer); timer = null;
+          readerEl.classList.add("controls-hidden");
+        }
+      }
+    }, { passive: true });
+    stage.addEventListener("pointercancel", () => { px = null; }, { passive: true });
+  }
+  arm(); /* أول دخول: الخيارات ظاهرة ثم تختفي تلقائياً حتى تُكتشف النقرة */
+}
+
 /* ----- بطاقة الكهف: يوم الجمعة فقط، أعلى تبويب المصحف ----- */
 function isFridayToday(){ return new Date().getDay() === 5; }
 function kahfCardHTML(){
@@ -6516,6 +6598,7 @@ function renderBrowse(){
     }
   }, { passive: true });
   updateBrowseHead();
+  initReaderChrome(contentEl.querySelector(".q-reader"));
 }
 
 /* ================= متفرّقة (بلا عدّادات — تصفّح وبحث) ================= */
