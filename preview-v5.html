@@ -110,8 +110,7 @@
   .virtue::before{content:"✦ "; color:var(--gold);}
   /* محاذاة يمين صريحة لكل المحتوى النصي (طلب المالك) — يبقى في المنتصف فقط:
      رقم «المتبقي» داخل دائرته (flex)، وشارة رقم صفحة المصحف، وعناوين شريط التنقل (flex) */
-  .virtue,.read-head,.read-text,
-  .progress-text,.q-head-title,.q-head-pos{text-align:right;}
+  .virtue,.read-head,.read-text,.progress-text{text-align:right;}
   .counter{
     flex:0 0 auto; align-self:center; width:66px; height:66px; border-radius:50%;
     border:2px solid var(--primary); color:var(--primary);
@@ -166,18 +165,28 @@
     text-align:right;
   }
   .q-end p{margin:0;}
-  .q-head{
-    position:sticky; top:69px; z-index:40; margin-top:16px;
-    background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    border:1px solid var(--border); border-radius:14px; padding:10px 14px 12px;
+  /* سطر معلومات القارئ — وحده فوق الصورة: السورة يميناً، رقم الصفحة
+     في الوسط، رقم الجزء شمالاً. لا عناصر تحكم فوق الصورة غيره */
+  .q-info{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:1px 4px 0; font-size:12.5px; font-weight:600; color:var(--muted);
   }
-  .q-head-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
-  .q-head-title{font-size:15px; font-weight:700; color:var(--primary); margin:0;}
-  .q-head-pos{font-size:13px; font-weight:600; color:var(--muted); margin:0;}
-  .q-head .bar{margin-top:9px;}
-  .q-head-btns{display:flex; gap:8px; margin-top:10px;}
-  .q-head-btns .q-btn{padding:7px 16px; min-height:40px; font-size:13.5px; flex:1;}
-  .q-page{scroll-margin-top:158px; margin-top:16px;}
+  .q-info-surah{color:var(--primary); font-weight:700; white-space:nowrap;}
+  .q-info-page{flex:1 1 auto; text-align:center; color:var(--text); font-weight:700; white-space:nowrap;}
+  .q-info-juz{white-space:nowrap;}
+  /* كتلة التنقّل أسفل الصورة: أزرار (السابق | السورة | التالي) وتحتها
+     السلايدر/شريط التقدم خطاً رفيعاً ملتصقاً بها في نفس الكتلة النحيفة */
+  .q-dock{
+    flex:0 0 auto; z-index:40;
+    background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--border); border-radius:12px; padding:5px 8px 6px;
+  }
+  .q-dock-btns{display:flex; align-items:center; gap:6px;}
+  .q-dock-btns .q-btn{padding:3px 10px; min-height:34px; font-size:13px; flex:1 1 0;}
+  .q-dock .bar{height:4px; margin-top:5px;}
+  .q-dock .b-slider{margin-top:5px;}
+  .q-dock .b-picker{margin:0 0 6px;}
+  .q-page{margin-top:0;}
   .q-chip{
     display:inline-block; font-size:12px; font-weight:700; color:var(--primary);
     background:var(--primary-soft); border:1px solid var(--border);
@@ -208,9 +217,9 @@
   .q-end{margin:18px 0 6px; text-align:right;}
   .q-end .q-btn{margin-top:12px;}
   /* ===== v5: التصفح الحر + علامة «هنا وقفت» + بطاقة الكهف ===== */
-  .b-slider{width:100%; margin-top:10px; accent-color:var(--primary); direction:rtl; height:28px; cursor:pointer;}
+  .b-slider{display:block; width:100%; margin:3px 0 0; accent-color:var(--primary); direction:rtl; height:13px; cursor:pointer;}
   .b-picker{
-    max-height:250px; overflow:auto; margin-top:10px;
+    max-height:190px; overflow:auto; margin-top:8px;
     border:1px solid var(--border); border-radius:12px; padding:4px 6px;
   }
   .b-picker[hidden]{display:none;}
@@ -240,20 +249,53 @@
   @keyframes bslideR{from{transform:translateX(26px); opacity:.35;} to{transform:translateX(0); opacity:1;}}
   .b-anim-next{animation:bslideL .28s ease;}
   .b-anim-prev{animation:bslideR .28s ease;}
-  /* إصلاح الوضع الأفقي (قرار الجولة الثانية — بطاقة مدمجة سطر واحد):
-     الترويسة بكل قارئات المصحف تصير صفاً واحداً: عنوان/موضع + تقدم +
-     أزرار أصغر، فلا تغطي أعلى الصفحة أبداً */
+  /* ===== قارئ المصحف بملء الشاشة (إصلاح الارتفاع): عند تفعيل أي قارئ
+     (تصفح حر أو ورد) تنكمش الترويسة العامة إلى سطر نحيف، وتصير الحاوية
+     بملء 100dvh بلا أي تمرير طولي، ومنطقة صورة الصفحة تأخذ كل الباقي ===== */
+  body.reader-on{overflow:hidden; padding-bottom:0;}
+  body.reader-on header .header-in{padding:4px 16px; min-height:0;}
+  body.reader-on .brand{font-size:19px;}
+  body.reader-on .icon-btn{width:36px; height:36px; font-size:16px;}
+  body.reader-on main.wrap{
+    height:calc(100vh - 45px - 57px - env(safe-area-inset-bottom));
+    height:calc(100dvh - 45px - 57px - env(safe-area-inset-bottom));
+    display:flex; flex-direction:column;
+  }
+  body.reader-on footer{display:none;}
+  body.reader-on #content{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
+  .q-reader{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; padding-top:4px;}
+  .q-stage{flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;}
+  .q-stage .q-page-card{
+    height:100%; max-height:100%; max-width:100%; padding:6px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .q-stage .q-img-wrap{
+    height:100%; max-height:100%; max-width:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .q-stage .q-page-img{
+    width:auto; height:auto; max-width:100%; max-height:100%;
+    object-fit:contain; aspect-ratio:auto;
+  }
+  .q-reader .q-chip{display:none;}
+  .q-end-compact{flex:0 0 auto; margin:0; padding:8px 12px; font-size:13px;}
+  .q-end-compact .q-actions{margin-top:6px;}
+  .q-end-compact .q-btn{min-height:33px; padding:3px 14px; font-size:13px;}
+  /* الوضع الأفقي القصير: شريط وترويسة أنحف بعد — الصورة دائماً كاملة */
   @media (orientation: landscape) and (max-height: 520px){
-    .q-head{display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:10px; flex-wrap:wrap;}
-    .q-head-row{flex:1 1 auto; flex-wrap:nowrap; min-width:0;}
-    .q-head-title{font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .q-head-pos{font-size:12px; white-space:nowrap;}
-    .q-head .bar{flex:0 0 64px; margin-top:0;}
-    .q-head-btns{margin-top:0; flex:0 0 auto;}
-    .q-head-btns .q-btn{min-height:32px; padding:4px 12px; font-size:12.5px; flex:none;}
-    .b-slider{flex:0 0 110px; margin-top:0; height:22px;}
-    .b-picker{flex:1 0 100%; order:5;}
-    .q-page{scroll-margin-top:88px; margin-top:8px;}
+    body.reader-on header .header-in{padding:2px 16px;}
+    body.reader-on .brand{font-size:17px;}
+    body.reader-on .icon-btn{width:32px; height:32px; font-size:15px;}
+    body.reader-on main.wrap{
+      height:calc(100vh - 37px - 57px - env(safe-area-inset-bottom));
+      height:calc(100dvh - 37px - 57px - env(safe-area-inset-bottom));
+    }
+    .q-reader{gap:5px; padding-top:4px;}
+    .q-info{font-size:11.5px;}
+    .q-dock{padding:4px 8px 5px;}
+    .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
+    .q-dock .b-slider{height:10px; margin-top:4px;}
+    .b-picker{max-height:150px;}
   }
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
   .extra-divider{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; font-weight:700; margin:2px;}
@@ -5734,6 +5776,7 @@ function switchTab(tab){
     quranMode = "home";
   }
   currentTab = tab;
+  setReaderMode(false);
   document.querySelectorAll(".nav-btn").forEach(b =>
     b.classList.toggle("active", b.getAttribute("data-tab") === tab));
   if (tab === "wird") renderWird();
@@ -6030,6 +6073,8 @@ function quranProgressPct(){
   const idx = qPages.indexOf(qCurrent);
   return idx < 0 ? 0 : Math.round(((idx + 1) / qPages.length) * 100);
 }
+/* وضع القارئ بملء الشاشة: يفعّله قارئا المصحف (تصفح/ورد) ويُلغيه ما عداهما */
+function setReaderMode(on){ document.body.classList.toggle("reader-on", !!on); }
 function renderQuran(){
   stopQuranObserver();
   if (qView === "browse"){ renderBrowse(); return; }
@@ -6041,7 +6086,10 @@ function quranSectionHeadHTML(){
     '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div>';
 }
 function renderQuranHome(){
-  let html = quranSectionHeadHTML() + kahfCardHTML() + '<div class="cards">';
+  setReaderMode(false);
+  /* تبويب المصحف بلا ترويسة عامة إطلاقاً (عنوان/تاريخ): مكررة مع شريط
+     القارئ الذي يعرض السورة ورقم الصفحة — يبدأ المحتوى مباشرة */
+  let html = kahfCardHTML() + '<div class="cards">';
   const range = getHomeRange();
   if (!range){
     html += '<article class="card read-card"><div class="card-main">' +
@@ -6092,7 +6140,10 @@ function mountQuranImg(wrap, p, attempt){
   img.setAttribute("loading", "lazy");
   img.setAttribute("decoding", "async");
   img.alt = "صفحة " + toAr(p) + " من المصحف";
-  img.addEventListener("load", () => { img.classList.add("loaded"); wrap.classList.remove("loading"); });
+  img.addEventListener("load", () => {
+    img.classList.add("loaded"); wrap.classList.remove("loading");
+    refreshMarker(wrap, p);
+  });
   img.addEventListener("error", () => {
     if (attempt < QIMG_BASES.length - 1){ mountQuranImg(wrap, p, attempt + 1); return; }
     wrap.classList.remove("loading");
@@ -6105,12 +6156,17 @@ function mountQuranImg(wrap, p, attempt){
   attachPageTools(wrap, p);
 }
 function updateQuranHead(){
-  const pos = document.getElementById("qPos");
-  if (!pos || qCurrent == null) return;
+  if (qCurrent == null) return;
   const idx = qPages.indexOf(qCurrent);
-  pos.textContent = "صفحة " + toAr(qCurrent) +
-    (idx >= 0 ? " — " + toAr(idx + 1) + " من " + toAr(qPages.length) : "");
-  document.getElementById("qBar").style.width = quranProgressPct() + "%";
+  /* سطر المعلومات فوق الصورة: سورة | صفحة | جزء */
+  const sEl = document.getElementById("qSurah");
+  if (sEl) sEl.textContent = "سورة " + SURA_NAMES[suraOfPage(qCurrent)];
+  const pEl = document.getElementById("qPage");
+  if (pEl) pEl.textContent = "صفحة " + toAr(qCurrent);
+  const jEl = document.getElementById("qJuz");
+  if (jEl) jEl.textContent = "الجزء " + toAr(juzOfPage(qCurrent));
+  const bar = document.getElementById("qBar");
+  if (bar) bar.style.width = quranProgressPct() + "%";
   document.getElementById("qPrev").disabled = idx <= 0;
   document.getElementById("qNext").disabled = idx < 0 || idx >= qPages.length - 1;
 }
@@ -6118,42 +6174,58 @@ function quranGoTo(p){
   const el = document.getElementById("qp" + p);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+/* قارئ الورد بملء الشاشة: صفحة واحدة في كل مرة (أزرار/سحب RTL) والصورة
+   كاملة داخل الشاشة بلا تمرير؛ بانر الإتمام يظهر عند آخر صفحة فقط */
+function showWirdPage(p, dir){
+  if (!qPages.includes(p)) return;
+  const d = dir || 0;
+  qCurrent = p;
+  updateQuranHead();
+  scheduleMushafSave();
+  const wrap = document.getElementById("qWrap");
+  if (wrap){
+    mountQuranImg(wrap, p);
+    if (d){
+      wrap.classList.remove("b-anim-next", "b-anim-prev");
+      void wrap.offsetWidth;
+      wrap.classList.add(d > 0 ? "b-anim-next" : "b-anim-prev");
+    }
+  }
+  const end = document.getElementById("qEnd");
+  if (end) end.style.display = (p === qPages[qPages.length - 1]) ? "" : "none";
+}
 function renderQuranReader(startAt){
   stopQuranObserver();
   if (!qRange.from || !qPages.length){ quranMode = "home"; renderQuranHome(); return; }
+  setReaderMode(true);
   const f = qRange.from, t = qRange.to;
   qCurrent = qPages.includes(startAt) ? startAt
     : (botRange && qPages.includes(botRange.lastPage) ? botRange.lastPage : f);
-  let html = '<div class="q-head"><div class="q-head-row">' +
-    '<p class="q-head-title">ورد القرآن — صفحات ' + toAr(f) + ' – ' + toAr(t) + '</p>' +
-    '<p class="q-head-pos" id="qPos"></p></div>' +
-    '<div class="bar"><i id="qBar"></i></div>' +
-    '<div class="q-head-btns">' +
+  let html = '<div class="q-reader">' +
+    '<div class="q-info">' +
+    '<span class="q-info-surah" id="qSurah"></span>' +
+    '<span class="q-info-page" id="qPage"></span>' +
+    '<span class="q-info-juz" id="qJuz"></span></div>' +
+    '<div class="q-stage"><div class="q-page-card"><div class="q-img-wrap loading" id="qWrap"></div></div></div>' +
+    '<div class="done-banner q-end q-end-compact" id="qEnd" style="display:none"><p>أتممت ورد القرآن اليوم؟ علّمه في البوت بزر «📖 أتممت ورد القرآن» ليُحسب في يومك ويتقدّم موضعك في الختمة 🤲</p>' +
+    '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>' +
+    '<div class="q-dock"><div class="q-dock-btns">' +
     '<button class="q-btn" type="button" id="qPrev">السابق</button>' +
     '<button class="q-btn" type="button" id="qExit">إنهاء</button>' +
     '<button class="q-btn" type="button" id="qNext">التالي</button>' +
     '<button class="q-btn" type="button" id="qToBrowse">تصفح حر</button>' +
-    '</div></div><div id="qPages">';
-  qPages.forEach(p => {
-    html += '<section class="q-page" data-page="' + p + '" id="qp' + p + '">' +
-      '<span class="q-chip">صفحة ' + toAr(p) + '</span>' +
-      '<div class="q-page-card"><div class="q-img-wrap loading" data-wrap="' + p + '"></div></div>' +
-      '</section>';
-  });
-  html += '</div>' +
-    '<div class="done-banner q-end"><p>أتممت ورد القرآن اليوم؟ علّمه في البوت بزر «📖 أتممت ورد القرآن» ليُحسب في يومك ويتقدّم موضعك في الختمة 🤲</p>' +
-    '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>';
+    '</div>' +
+    '<div class="bar"><i id="qBar"></i></div></div>' +
+    '</div>';
   contentEl.innerHTML = html;
-  contentEl.querySelectorAll(".q-img-wrap").forEach(wrap => {
-    mountQuranImg(wrap, +wrap.getAttribute("data-wrap"));
-  });
+  mountQuranImg(document.getElementById("qWrap"), qCurrent);
   document.getElementById("qPrev").addEventListener("click", () => {
     const i = qPages.indexOf(qCurrent);
-    if (i > 0) quranGoTo(qPages[i - 1]);
+    if (i > 0) showWirdPage(qPages[i - 1], -1);
   });
   document.getElementById("qNext").addEventListener("click", () => {
     const i = qPages.indexOf(qCurrent);
-    if (i >= 0 && i < qPages.length - 1) quranGoTo(qPages[i + 1]);
+    if (i >= 0 && i < qPages.length - 1) showWirdPage(qPages[i + 1], 1);
   });
   document.getElementById("qToBrowse").addEventListener("click", () => {
     if (qCurrent != null && botRange){ botRange.lastPage = qCurrent; persistBotRange(); }
@@ -6166,18 +6238,27 @@ function renderQuranReader(startAt){
   };
   document.getElementById("qExit").addEventListener("click", exitFn);
   document.getElementById("qEndExit").addEventListener("click", exitFn);
+  /* سحب RTL كالمصحف الورقي: إصبع نحو اليمين = التالي (يدخل من الشمال)،
+     ونحو اليسار = السابق (يدخل من اليمين) — متوافق مع اتجاه الأزرار */
+  const stage = document.getElementById("qWrap");
+  let qtx = null, qty = null;
+  stage.addEventListener("touchstart", ev => {
+    const tch = ev.changedTouches[0]; qtx = tch.clientX; qty = tch.clientY;
+  }, { passive: true });
+  stage.addEventListener("touchend", ev => {
+    if (qtx === null) return;
+    const tch = ev.changedTouches[0];
+    const dx = tch.clientX - qtx, dy = tch.clientY - qty;
+    qtx = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4){
+      const i = qPages.indexOf(qCurrent);
+      if (dx > 0 && i >= 0 && i < qPages.length - 1) showWirdPage(qPages[i + 1], 1);
+      else if (dx < 0 && i > 0) showWirdPage(qPages[i - 1], -1);
+    }
+  }, { passive: true });
   updateQuranHead();
-  qObserver = new IntersectionObserver(entries => {
-    entries.forEach(en => {
-      if (en.isIntersecting){
-        const p = +en.target.getAttribute("data-page");
-        if (p !== qCurrent){ qCurrent = p; updateQuranHead(); scheduleMushafSave(); }
-      }
-    });
-  }, { rootMargin: "-40% 0px -50% 0px", threshold: 0 });
-  contentEl.querySelectorAll(".q-page").forEach(el => qObserver.observe(el));
-  const target = document.getElementById("qp" + qCurrent);
-  if (target) requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+  const end0 = document.getElementById("qEnd");
+  if (end0) end0.style.display = (qCurrent === qPages[qPages.length - 1]) ? "" : "none";
 }
 
 /* ================= v5: التصفح الحر + علامة «هنا وقفت» + الكهف =================
@@ -6201,6 +6282,13 @@ function suraOfPage(p){
   let s = 0;
   for (let i = 0; i < 114; i++){ if (SURA_STARTS[i] <= p) s = i; else break; }
   return s; /* فهرس 0..113 */
+}
+/* بدايات الأجزاء الثلاثين في مصحف المدينة (جدول قياسي) */
+const JUZ_STARTS = [1,22,42,62,82,102,122,142,162,182,202,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
+function juzOfPage(p){
+  let j = 0;
+  for (let i = 0; i < 30; i++){ if (JUZ_STARTS[i] <= p) j = i; else break; }
+  return j + 1; /* 1..30 */
 }
 function pageSpanText(p){
   const sp = PAGE_SPANS[p - 1];
@@ -6236,9 +6324,19 @@ function renderMarkerInto(wrap, p){
   if (!marker || marker.page !== p) return;
   const d = document.createElement("div");
   d.className = "q-marker";
-  d.style.top = (marker.y * 100) + "%";
+  /* الموضع يُحسب من صندوق الصورة نفسها لا من الحاوية: في قارئ ملء الشاشة
+     قد تزيد الحاوية عن الصورة (حشو علوي/سفلي)، فالنسبة من الصورة أدق */
+  const img = wrap.querySelector("img");
+  if (img && img.offsetHeight > 0)
+    d.style.top = (img.offsetTop + marker.y * img.offsetHeight) + "px";
+  else
+    d.style.top = (marker.y * 100) + "%";
   d.innerHTML = "<i></i><span>🔖 هنا وقفت — صفحة " + toAr(p) + " · " + esc(pageSpanText(p)) + "</span>";
   wrap.appendChild(d);
+}
+function refreshMarker(wrap, p){
+  wrap.querySelectorAll(".q-marker").forEach(el => el.remove());
+  renderMarkerInto(wrap, p);
 }
 function showMarkerToast(){
   let t = document.getElementById("mkToast");
@@ -6258,7 +6356,9 @@ function attachPageTools(wrap, p){
     sx = ev.clientX; sy = ev.clientY;
     timer = setTimeout(() => {
       timer = null;
-      const rect = wrap.getBoundingClientRect();
+      const img = wrap.querySelector("img");
+      const rect = (img && img.getBoundingClientRect().height > 0)
+        ? img.getBoundingClientRect() : wrap.getBoundingClientRect();
       const y = Math.min(0.98, Math.max(0.02, (sy - rect.top) / rect.height));
       marker = { page: p, y: Math.round(y * 1000) / 1000 };
       persistMarker();
@@ -6300,12 +6400,18 @@ function openBrowse(p){
   renderQuran();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+/* سطر معلومات التصفح فوق الصورة: سورة | صفحة | جزء — لصفحة معيّنة */
+function setBrowseInfo(p){
+  const s = document.getElementById("bSurah");
+  if (s) s.textContent = "سورة " + SURA_NAMES[suraOfPage(p)];
+  const pg = document.getElementById("bPage");
+  if (pg) pg.textContent = "صفحة " + toAr(p);
+  const j = document.getElementById("bJuz");
+  if (j) j.textContent = "الجزء " + toAr(juzOfPage(p));
+}
 function updateBrowseHead(){
-  const pos = document.getElementById("bPos");
-  if (!pos) return;
-  pos.textContent = "سورة " + SURA_NAMES[suraOfPage(browsePage)] +
-    " — صفحة " + toAr(browsePage) + " من " + toAr(604);
-  document.getElementById("bBar").style.width = Math.round(browsePage / 604 * 100) + "%";
+  if (!document.getElementById("bPage")) return;
+  setBrowseInfo(browsePage);
   document.getElementById("bPrev").disabled = browsePage <= 1;
   document.getElementById("bNext").disabled = browsePage >= 604;
   const sl = document.getElementById("bSlider");
@@ -6331,25 +6437,26 @@ function browseGo(p, dir){
   });
 }
 function renderBrowse(){
-  let html = quranSectionHeadHTML() + kahfCardHTML() +
-    '<div class="q-head"><div class="q-head-row">' +
-    '<p class="q-head-title">📖 المصحف — تصفح حر</p>' +
-    '<p class="q-head-pos" id="bPos"></p></div>' +
-    '<div class="bar"><i id="bBar"></i></div>' +
-    '<div class="q-head-btns">' +
+  setReaderMode(true);
+  let html = '<div class="q-reader">' + kahfCardHTML() +
+    '<div class="q-info">' +
+    '<span class="q-info-surah" id="bSurah"></span>' +
+    '<span class="q-info-page" id="bPage"></span>' +
+    '<span class="q-info-juz" id="bJuz"></span></div>' +
+    '<div class="q-stage"><div class="q-page-card"><div class="q-img-wrap loading" id="bWrap"></div></div></div>' +
+    '<div class="q-dock">' +
+    '<div class="b-picker" id="bPicker" hidden>' +
+    SURA_NAMES.map((n, i) => '<button class="b-surah" type="button" data-surah="' + i + '"><span>' + esc(n) + '</span><span class="b-surah-pg">صفحة ' + toAr(SURA_STARTS[i]) + '</span></button>').join("") +
+    '</div>' +
+    '<div class="q-dock-btns">' +
     '<button class="q-btn" type="button" id="bPrev">السابق</button>' +
     '<button class="q-btn" type="button" id="bSurahBtn">السورة ▾</button>' +
     '<button class="q-btn" type="button" id="bNext">التالي</button>' +
     (botRange ? '<button class="q-btn" type="button" id="bToWird">الورد</button>' : '') +
     '</div>' +
     '<input class="b-slider" type="range" id="bSlider" min="1" max="604" step="1" dir="rtl" value="' + browsePage + '" aria-label="التنقل بين الصفحات">' +
-    '<div class="b-picker" id="bPicker" hidden>' +
-    SURA_NAMES.map((n, i) => '<button class="b-surah" type="button" data-surah="' + i + '"><span>' + esc(n) + '</span><span class="b-surah-pg">صفحة ' + toAr(SURA_STARTS[i]) + '</span></button>').join("") +
-    '</div></div>' +
-    '<section class="q-page"><span class="q-chip" id="bChip">صفحة ' + toAr(browsePage) + '</span>' +
-    '<div class="q-page-card"><div class="q-img-wrap loading" id="bWrap"></div></div></section>' +
-    '<p class="virtue">اسحب يميناً أو يساراً على الصفحة للتقليب — واضغط مطوّلاً على أي موضع لوضع علامة «هنا وقفت» هناك.</p>' +
-    (!botRange ? '<p class="virtue">هذا مصحفك الكامل هنا في أي وقت. ورد القرآن اليومي (صفحات كل يوم وموضع ختمتك) يُضبط من البوت.</p>' : '');
+    '</div>' +
+    '</div>';
   contentEl.innerHTML = html;
   bindKahf();
   mountQuranImg(document.getElementById("bWrap"), browsePage);
@@ -6365,12 +6472,7 @@ function renderBrowse(){
     browseGo(SURA_STARTS[+b.getAttribute("data-surah")]);
   }));
   const slider = document.getElementById("bSlider");
-  slider.addEventListener("input", () => {
-    const pos = document.getElementById("bPos");
-    const v = +slider.value;
-    if (pos) pos.textContent = "سورة " + SURA_NAMES[suraOfPage(v)] +
-      " — صفحة " + toAr(v) + " من " + toAr(604);
-  });
+  slider.addEventListener("input", () => { setBrowseInfo(+slider.value); });
   slider.addEventListener("change", () => browseGo(+slider.value));
   const tw = document.getElementById("bToWird");
   if (tw) tw.addEventListener("click", () => {
@@ -6387,8 +6489,10 @@ function renderBrowse(){
     const t = ev.changedTouches[0];
     const dx = t.clientX - tx, dy = t.clientY - ty;
     tx = null;
+    /* اتجاه RTL كالمصحف الورقي: سحب الإصبع نحو اليمين = الصفحة التالية
+       (تدخل منزلقة من الشمال)، ونحو اليسار = السابقة (من اليمين) */
     if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4){
-      if (dx < 0) browseGo(browsePage + 1, 1); else browseGo(browsePage - 1, -1);
+      if (dx > 0) browseGo(browsePage + 1, 1); else browseGo(browsePage - 1, -1);
     }
   }, { passive: true });
   updateBrowseHead();
