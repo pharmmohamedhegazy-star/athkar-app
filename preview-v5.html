@@ -283,20 +283,45 @@
   .q-end-compact{flex:0 0 auto; margin:0; padding:8px 12px; font-size:13px;}
   .q-end-compact .q-actions{margin-top:6px;}
   .q-end-compact .q-btn{min-height:33px; padding:3px 14px; font-size:13px;}
-  /* الوضع الأفقي القصير: شريط وترويسة أنحف بعد — الصورة دائماً كاملة */
+  /* الوضع الأفقي القصير داخل قارئ المصحف فقط (إصلاح الأفقي بعد النشر —
+     لقطة هاتف محمد 2026-11-12: الصورة كانت 61–63% فقط من الارتفاع المتاح
+     لأن الترويسة وسطر المعلومات وكتلة التنقل يخصمون منها): الترويسة العامة
+     تختفي نهائياً، وسطر المعلومات وكتلة التنقل وبطاقة الكهف وبانر إتمام
+     الورد طبقات عائمة فوق منطقة الصورة (لا تخصم من ارتفاعها)، وإطار بطاقة
+     الصفحة يُصفَّر — فتأخذ الصورة كل الارتفاع من أعلى الشاشة إلى شريط
+     تنقّل التطبيق الذي يبقى ظاهراً كما هو. الطولي لا يتغيّر إطلاقاً. */
   @media (orientation: landscape) and (max-height: 520px){
-    body.reader-on header .header-in{padding:2px 16px;}
-    body.reader-on .brand{font-size:17px;}
-    body.reader-on .icon-btn{width:32px; height:32px; font-size:15px;}
+    body.reader-on header{display:none;}
     body.reader-on main.wrap{
-      height:calc(100vh - 37px - 70px - env(safe-area-inset-bottom));
-      height:calc(100dvh - 37px - 70px - env(safe-area-inset-bottom));
+      height:calc(100vh - 70px - env(safe-area-inset-bottom));
+      height:calc(100dvh - 70px - env(safe-area-inset-bottom));
     }
-    .q-reader{gap:5px; padding-top:4px;}
-    .q-info{font-size:11.5px;}
-    .q-dock{padding:4px 8px 5px;}
-    .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
-    .b-picker{max-height:150px;}
+    body.reader-on .q-reader{position:relative; gap:0; padding-top:0;}
+    body.reader-on .q-info{
+      position:absolute; top:6px; inset-inline:10px; z-index:30;
+      padding:4px 14px; border-radius:99px; font-size:11.5px;
+      background:var(--header-bg); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border:1px solid var(--border); box-shadow:var(--shadow);
+    }
+    body.reader-on .q-dock{
+      position:absolute; bottom:6px; inset-inline:10px; z-index:40;
+      padding:4px 8px 5px;
+    }
+    body.reader-on .q-dock-btns .q-btn{min-height:30px; padding:2px 8px; font-size:12.5px;}
+    body.reader-on .b-picker{max-height:150px;}
+    body.reader-on .q-stage .q-page-card{padding:0; border:none; border-radius:0; box-shadow:none; background:transparent;}
+    body.reader-on .q-stage .q-img-wrap{border-radius:0;}
+    body.reader-on .kahf-card{
+      position:absolute; top:40px; inset-inline:10px; z-index:25;
+      margin:0; padding:10px 14px; gap:6px;
+    }
+    body.reader-on .kahf-card .read-head{font-size:14.5px; margin:0;}
+    body.reader-on .kahf-card .virtue{font-size:12px; line-height:1.7; margin:0;}
+    body.reader-on .kahf-card .q-actions{margin-top:6px;}
+    body.reader-on .kahf-card .q-btn{min-height:36px; padding:4px 16px;}
+    body.reader-on .q-end-compact{
+      position:absolute; bottom:58px; inset-inline:10px; z-index:35; margin:0;
+    }
   }
   /* ===== الإصدار ٣: فاصل الإضافي ===== */
   .extra-divider{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; font-weight:700; margin:2px;}
