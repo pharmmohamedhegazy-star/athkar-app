@@ -236,7 +236,22 @@
     position:absolute; top:-11px; inset-inline-start:8px; background:#C0392B; color:#fff;
     font-size:11.5px; font-weight:700; border-radius:99px; padding:2px 10px; white-space:nowrap;
   }
-  .kahf-card{border:1.5px solid var(--primary);}
+  .kahf-card{border:1.5px solid var(--primary); position:relative;}
+  .kahf-x{
+    position:absolute; top:6px; inset-inline-end:8px; z-index:2;
+    width:30px; height:30px; border-radius:50%; padding:0;
+    border:1px solid var(--border); background:var(--header-bg);
+    color:var(--muted); font-size:14px; line-height:1; cursor:pointer;
+    font-family:inherit;
+  }
+  /* شريط «علامتي» داخل كتلة التنقّل: يختفي ويظهر معها، وضغطة تقفز للعلامة */
+  .q-marker-row{display:flex; justify-content:center; margin-bottom:8px;}
+  .q-marker-chip{
+    background:#C0392B; color:#fff; border:none; cursor:pointer;
+    font-family:inherit; font-size:13px; font-weight:700;
+    border-radius:99px; padding:8px 18px; min-height:40px;
+    box-shadow:var(--shadow); white-space:nowrap;
+  }
   .mk-toast{
     position:fixed; left:50%; bottom:92px; transform:translateX(-50%) translateY(8px);
     background:var(--primary); color:#FFFDF8; font-size:13.5px; font-weight:700;
@@ -343,13 +358,15 @@
     transition:opacity .25s ease, visibility .25s ease;
   }
   body.reader-on .q-reader.controls-hidden .q-info,
-  body.reader-on .q-reader.controls-hidden .q-dock{
+  body.reader-on .q-reader.controls-hidden .q-dock,
+  body.reader-on .q-reader.controls-hidden .kahf-card{
     opacity:0; visibility:hidden; pointer-events:none;
   }
   body.reader-on .kahf-card{
     /* تحت سطر المعلومات الجديد (52px + ارتفاع الكبسولة + فاصل) */
     position:absolute; top:90px; inset-inline:10px; z-index:25;
     margin:0; padding:10px 14px;
+    transition:opacity .25s ease, visibility .25s ease;
   }
   body.reader-on .kahf-card .read-head{font-size:14.5px; margin:0;}
   body.reader-on .kahf-card .virtue{font-size:12px; line-height:1.7; margin:0;}
@@ -6306,7 +6323,7 @@ function renderQuranReader(startAt){
     '<div class="q-stage"><div class="q-page-card"><div class="q-img-wrap loading" id="qWrap"></div></div></div>' +
     '<div class="done-banner q-end q-end-compact" id="qEnd" style="display:none"><p>أتممت ورد القرآن اليوم؟ علّمه في البوت بزر «📖 أتممت ورد القرآن» ليُحسب في يومك ويتقدّم موضعك في الختمة 🤲</p>' +
     '<div class="q-actions"><button class="q-btn" type="button" id="qEndExit">إنهاء</button></div></div>' +
-    '<div class="q-dock"><div class="q-dock-btns">' +
+    '<div class="q-dock">' + markerChipHTML() + '<div class="q-dock-btns">' +
     '<button class="q-btn" type="button" id="qPrev">السابق</button>' +
     '<button class="q-btn" type="button" id="qExit">إنهاء</button>' +
     '<button class="q-btn" type="button" id="qNext">التالي</button>' +
@@ -6315,6 +6332,7 @@ function renderQuranReader(startAt){
     '<div class="bar"><i id="qBar"></i></div></div>' +
     '</div>';
   contentEl.innerHTML = html;
+  bindMarkerChip();
   mountQuranImg(document.getElementById("qWrap"), qCurrent);
   document.getElementById("qPrev").addEventListener("click", () => {
     const i = qPages.indexOf(qCurrent);
@@ -6463,6 +6481,7 @@ function attachPageTools(wrap, p){
       document.querySelectorAll(".q-marker").forEach(el => el.remove());
       renderMarkerInto(wrap, p);
       showMarkerToast();
+      refreshMarkerChip();
     }, 550);
   });
   wrap.addEventListener("pointermove", ev => {
@@ -6526,9 +6545,15 @@ function initReaderChrome(readerEl){
 
 /* ----- بطاقة الكهف: يوم الجمعة فقط، أعلى تبويب المصحف ----- */
 function isFridayToday(){ return new Date().getDay() === 5; }
+const KAHF_HIDE_KEY = "mudhakir_kahf_hide_v1";
+function kahfHiddenToday(){
+  try{ return localStorage.getItem(KAHF_HIDE_KEY) === new Date().toDateString(); }catch(e){ return false; }
+}
 function kahfCardHTML(){
-  if (!isFridayToday()) return "";
-  return '<article class="card read-card kahf-card"><div class="card-main">' +
+  if (!isFridayToday() || kahfHiddenToday()) return "";
+  return '<article class="card read-card kahf-card">' +
+    '<button class="kahf-x" type="button" id="kahfX" aria-label="إخفاء بطاقة الكهف اليوم">✕</button>' +
+    '<div class="card-main">' +
     '<h3 class="read-head">🕌 اليوم الجمعة — سورة الكهف</h3>' +
     '<p class="virtue">من سنن يوم الجمعة قراءة سورة الكهف (الصفحات ' + toAr(293) + '–' + toAr(304) + ' في مصحف المدينة).</p>' +
     '<div class="q-actions"><button class="q-btn primary" type="button" id="kahfGo">📖 اقرأها الآن</button></div>' +
@@ -6537,6 +6562,42 @@ function kahfCardHTML(){
 function bindKahf(){
   const b = document.getElementById("kahfGo");
   if (b) b.addEventListener("click", () => openBrowse(293));
+  const x = document.getElementById("kahfX");
+  if (x) x.addEventListener("click", () => {
+    try{ localStorage.setItem(KAHF_HIDE_KEY, new Date().toDateString()); }catch(e){}
+    const card = x.closest(".kahf-card");
+    if (card) card.remove();
+  });
+}
+
+/* ----- شريط «علامتي»: أين علامة «هنا وقفت» + قفزة إليها بضغطة -----
+   يعيش داخل كتلة التنقّل (.q-dock) في القارئين فيظهر ويختفي مع طبقات
+   القارئ، ولا يحجب الصفحة أبداً بشكل دائم. الضغطة تفتح التصفح الحر
+   على صفحة العلامة — موضع التصفح مستقل عن الورد كما هو مقرر. */
+function markerChipLabel(){
+  return "🔖 علامتي: صفحة " + toAr(marker.page) + " · سورة " + SURA_NAMES[suraOfPage(marker.page)];
+}
+function markerChipHTML(){
+  if (!marker) return "";
+  return '<div class="q-marker-row"><button class="q-marker-chip" type="button" id="mkChip">' +
+    markerChipLabel() + '</button></div>';
+}
+function bindMarkerChip(){
+  const c = document.getElementById("mkChip");
+  if (c) c.addEventListener("click", () => { if (marker) openBrowse(marker.page); });
+}
+function refreshMarkerChip(){
+  const chip = document.getElementById("mkChip");
+  if (!marker){
+    if (chip){ const row = chip.closest(".q-marker-row"); if (row) row.remove(); }
+    return;
+  }
+  if (chip){ chip.textContent = markerChipLabel(); return; }
+  const btns = document.querySelector(".q-reader .q-dock-btns");
+  if (btns && markerChipHTML()){
+    btns.insertAdjacentHTML("beforebegin", markerChipHTML());
+    bindMarkerChip();
+  }
 }
 
 /* ----- وضع التصفح الحر ----- */
@@ -6593,7 +6654,7 @@ function renderBrowse(){
     '<div class="q-dock">' +
     '<div class="b-picker" id="bPicker" hidden>' +
     SURA_NAMES.map((n, i) => '<button class="b-surah" type="button" data-surah="' + i + '"><span>' + esc(n) + '</span><span class="b-surah-pg">صفحة ' + toAr(SURA_STARTS[i]) + '</span></button>').join("") +
-    '</div>' +
+    '</div>' + markerChipHTML() +
     '<div class="q-dock-btns">' +
     '<button class="q-btn" type="button" id="bPrev">السابق</button>' +
     '<button class="q-btn" type="button" id="bSurahBtn">السورة ▾</button>' +
@@ -6604,6 +6665,7 @@ function renderBrowse(){
     '</div>';
   contentEl.innerHTML = html;
   bindKahf();
+  bindMarkerChip();
   mountQuranImg(document.getElementById("bWrap"), browsePage);
   [browsePage - 1, browsePage + 1].forEach(n => {
     if (validPage(n)){ const im = new Image(); im.src = quranImgUrl(n); }
