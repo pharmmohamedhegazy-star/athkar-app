@@ -106,6 +106,25 @@
     display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
   .share-btn svg{ width:19px; height:19px; fill:var(--primary); display:block; }
   .share-strip{ display:flex; justify-content:flex-end; margin-bottom:6px; }
+  /* ===== قائمة المشاركة داخل التطبيق (v5.9) ===== */
+  .share-overlay{ position:fixed; inset:0; background:rgba(34,48,42,.45); z-index:200;
+    display:none; align-items:flex-end; justify-content:center; }
+  .share-overlay.open{ display:flex; }
+  .share-sheet{ background:var(--card); width:100%; max-width:480px; border-radius:22px 22px 0 0;
+    padding:10px 18px calc(14px + env(safe-area-inset-bottom)); box-shadow:0 -6px 30px rgba(34,48,42,.25); }
+  .share-handle{ width:38px; height:4px; border-radius:99px; background:var(--border); margin:2px auto 12px; }
+  .share-title{ font-size:14.5px; font-weight:700; margin-bottom:14px; }
+  .share-apps{ display:flex; justify-content:space-between; }
+  .share-app{ background:none; border:none; cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:6px; width:64px;
+    font-size:11.5px; color:var(--muted); font-weight:600; padding:0; }
+  .share-app .ic{ width:50px; height:50px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:22px; color:#fff; }
+  .share-app .ic.tg{ background:#229ED9; } .share-app .ic.wa{ background:#25D366; }
+  .share-app .ic.x{ background:#000; font-weight:700; } .share-app .ic.fb{ background:#1877F2; font-weight:700; }
+  .share-cancel{ display:block; width:100%; margin-top:15px; padding-top:12px; background:none; border:none;
+    border-top:1px solid var(--border); font-family:inherit; font-size:13.5px; font-weight:600;
+    color:var(--muted); cursor:pointer; }
   .share-strip .share-btn{ margin-inline-start:0; }
   .card.done .chip{display:none;}
   .dhikr{
@@ -541,6 +560,19 @@
   </div>
 </nav>
 
+<div class="share-overlay" id="shareOverlay">
+  <div class="share-sheet">
+    <div class="share-handle"></div>
+    <h4 class="share-title">مشاركة عبر…</h4>
+    <div class="share-apps">
+      <button type="button" class="share-app" data-t="tg"><span class="ic tg">✈️</span>تليجرام</button>
+      <button type="button" class="share-app" data-t="wa"><span class="ic wa">💬</span>واتساب</button>
+      <button type="button" class="share-app" data-t="x"><span class="ic x">𝕏</span>إكس</button>
+      <button type="button" class="share-app" data-t="fb"><span class="ic fb">f</span>فيسبوك</button>
+    </div>
+    <button type="button" class="share-cancel" id="shareCancel">إلغاء</button>
+  </div>
+</div>
 <script>
 "use strict";
 /* ================= بيانات الإصدار ٣ (نسخة مراجعة — لا تُنشر قبل اعتماد المالك) =================
@@ -5691,17 +5723,42 @@ const SHARE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 4.
 const SHARE_TEXTS = {};
 const SHARE_BOT_LINK = "https://t.me/MyMudhakirBot";
 function sharePlain(v){ return String(v == null ? "" : v).split("﴿").join("").split("﴾").join("").trim(); }
+let sharePending = "";
 function shareCard(key){
   const plain = SHARE_TEXTS[key];
   if (!plain) return;
   try{ haptic("light"); }catch(e){}
   const foot = "\n\n🌿 من مُذَكِّرٌ — بوت الأذكار والورد اليومي:";
+  const full = plain + foot + "\n" + SHARE_BOT_LINK;
   if (navigator.share){
-    navigator.share({ text: plain + foot + "\n" + SHARE_BOT_LINK }).catch(() => {});
-  } else if (tg && tg.openTelegramLink){
-    tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(SHARE_BOT_LINK) +
-      "&text=" + encodeURIComponent(plain + foot));
+    navigator.share({ text: full }).catch(() => {});
+  } else {
+    /* v5.9: متصفح تيليجرام الداخلي (أندرويد) لا يدعم قائمة نظام
+       الموبايل أصلاً — قائمة مشاركة داخل التطبيق بهدف مباشر لكل
+       تطبيق (ملاحظة المالك 2026-11-17: كان يفتح محوّل تيليجرام) */
+    sharePending = full;
+    document.getElementById("shareOverlay").classList.add("open");
   }
+}
+function closeShareSheet(){
+  document.getElementById("shareOverlay").classList.remove("open");
+}
+function shareTo(target){
+  const full = sharePending;
+  if (!full) return;
+  const enc = encodeURIComponent;
+  closeShareSheet();
+  if (target === "tg"){
+    const u = "https://t.me/share/url?text=" + enc(full);
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, "_blank");
+    return;
+  }
+  let url = null;
+  if (target === "wa") url = "https://wa.me/?text=" + enc(full);
+  else if (target === "x") url = "https://twitter.com/intent/tweet?text=" + enc(full);
+  else if (target === "fb") url = "https://www.facebook.com/sharer/sharer.php?u=" +
+    enc(SHARE_BOT_LINK) + "&quote=" + enc(full);
+  if (url){ if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank"); }
 }
 function shareBtnHTML(key){
   return '<button type="button" class="share-btn" data-share-key="' + key + '" aria-label="مشاركة">' + SHARE_SVG + '</button>';
@@ -6956,6 +7013,13 @@ function init(){
   qView = botRange ? "wird" : "browse";
   document.querySelectorAll(".nav-btn").forEach(b =>
     b.addEventListener("click", () => switchTab(b.getAttribute("data-tab"))));
+  const _sho = document.getElementById("shareOverlay");
+  if (_sho){
+    _sho.addEventListener("click", ev => { if (ev.target === _sho) closeShareSheet(); });
+    document.getElementById("shareCancel").addEventListener("click", closeShareSheet);
+    _sho.querySelectorAll(".share-app").forEach(b =>
+      b.addEventListener("click", () => shareTo(b.getAttribute("data-t"))));
+  }
   let initial = "athkar";
   try{
     const params = new URLSearchParams(window.location.search);
