@@ -116,12 +116,18 @@
   .share-title{ font-size:14.5px; font-weight:700; margin-bottom:14px; }
   .share-apps{ display:flex; justify-content:space-between; }
   .share-app{ background:none; border:none; cursor:pointer; font-family:inherit;
-    display:flex; flex-direction:column; align-items:center; gap:6px; width:64px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; width:62px;
     font-size:11.5px; color:var(--muted); font-weight:600; padding:0; }
   .share-app .ic{ width:50px; height:50px; border-radius:50%; display:flex; align-items:center;
     justify-content:center; font-size:22px; color:#fff; }
   .share-app .ic.tg{ background:#229ED9; } .share-app .ic.wa{ background:#25D366; }
   .share-app .ic.x{ background:#000; font-weight:700; } .share-app .ic.fb{ background:#1877F2; font-weight:700; }
+  .share-app .ic.cp{ background:#8A97A5; }
+  .share-toast{ position:fixed; bottom:110px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--primary); color:#fff; font-size:13px; font-weight:600; padding:9px 18px;
+    border-radius:99px; box-shadow:0 8px 24px rgba(34,48,42,.3); opacity:0; pointer-events:none;
+    transition:opacity .25s, transform .25s; z-index:210; white-space:nowrap; }
+  .share-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .share-cancel{ display:block; width:100%; margin-top:15px; padding-top:12px; background:none; border:none;
     border-top:1px solid var(--border); font-family:inherit; font-size:13.5px; font-weight:600;
     color:var(--muted); cursor:pointer; }
@@ -569,10 +575,12 @@
       <button type="button" class="share-app" data-t="wa"><span class="ic wa">💬</span>واتساب</button>
       <button type="button" class="share-app" data-t="x"><span class="ic x">𝕏</span>إكس</button>
       <button type="button" class="share-app" data-t="fb"><span class="ic fb">f</span>فيسبوك</button>
+      <button type="button" class="share-app" data-t="copy"><span class="ic cp">📋</span>نسخ النص</button>
     </div>
     <button type="button" class="share-cancel" id="shareCancel">إلغاء</button>
   </div>
 </div>
+<div class="share-toast" id="shareToast"></div>
 <script>
 "use strict";
 /* ================= بيانات الإصدار ٣ (نسخة مراجعة — لا تُنشر قبل اعتماد المالك) =================
@@ -5743,10 +5751,39 @@ function shareCard(key){
 function closeShareSheet(){
   document.getElementById("shareOverlay").classList.remove("open");
 }
+function legacyCopy(text){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return !!ok;
+  }catch(e){ return false; }
+}
+function showShareToast(msg){
+  const t = document.getElementById("shareToast");
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+function copyShareText(text){
+  /* v5.9.1: خانة «نسخ النص» في قائمة المشاركة (طلب المالك) — لأي
+     تطبيق غير ممثّل في القائمة (Signal وغيره): ينسخ النص المُجهّز
+     كاملاً فيلصقه المستخدم حيث شاء */
+  const done = () => showShareToast("تم نسخ النص ✓ الصقه في أي تطبيق");
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, () => { legacyCopy(text); done(); });
+  } else { legacyCopy(text); done(); }
+}
 function shareTo(target){
   const full = sharePending;
   if (!full) return;
   const enc = encodeURIComponent;
+  if (target === "copy"){ copyShareText(full); closeShareSheet(); return; }
   closeShareSheet();
   if (target === "tg"){
     const u = "https://t.me/share/url?text=" + enc(full);
