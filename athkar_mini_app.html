@@ -5883,6 +5883,7 @@ function toggleListen(key){
   a.addEventListener("play", syncListenUI);
   a.addEventListener("pause", syncListenUI);
   a.addEventListener("ended", stopListen);
+  a.addEventListener("error", stopListen);
   a.play().catch(() => {});
   syncListenUI();
 }
