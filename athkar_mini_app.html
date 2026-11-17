@@ -65,7 +65,7 @@
   .sec-date.sec-hijri{margin-top:-9px; font-size:12.5px;}
   .progress-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
   .progress-text{font-size:13.5px; color:var(--muted); font-weight:600;}
-  .reset-btn{
+  .reset-link{
     border:none; background:none; color:var(--primary); cursor:pointer;
     font-family:inherit; font-size:13px; font-weight:600; padding:8px 4px; min-height:44px;
   }
@@ -152,6 +152,43 @@
   .listen-progress i{ display:block; height:100%; width:0; background:#C9A227; border-radius:99px; }
   .listen-time{ display:none; font-size:12px; color:var(--muted); text-align:right; }
   .listen-time.on{ display:block; }
+
+  /* ===== التشغيل المتتابع + صف أزرار القسم (v6.1 — تصميم معتمد من المالك 2026-11-17) ===== */
+  .ap-row{ display:flex; gap:10px; align-items:stretch; margin-top:14px; }
+  .playall-btn{ flex:none; width:calc((100% - 10px) * 2 / 3); background:#1E5B45; color:#FFFDF8; border:none; cursor:pointer;
+    font-family:inherit; border-radius:999px; padding:12px 16px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow:0 8px 20px rgba(30,91,69,.30); }
+  .playall-btn svg{ width:20px; height:20px; fill:#FFFDF8; display:block; flex:none; }
+  .playall-btn .pa-col{ display:flex; flex-direction:column; align-items:flex-start; text-align:right; }
+  .playall-btn .pa-t{ font-size:19px; font-weight:700; line-height:1.3; }
+  .playall-btn .pa-s{ font-size:12px; color:rgba(255,253,248,.78); margin-top:2px; }
+  .reset-btn{ flex:none; width:calc((100% - 10px) / 3); background:var(--card); color:var(--text); cursor:pointer;
+    font-family:inherit; border:1.5px solid var(--gold); border-radius:999px; padding:12px 4px;
+    display:flex; align-items:center; justify-content:center; gap:4px; }
+  .reset-btn svg{ width:17px; height:17px; fill:#8A6D2F; display:block; flex:none; }
+  .reset-btn .rs-t{ font-size:13px; font-weight:600; line-height:1.35; white-space:nowrap; }
+  .now-badge{ display:none; background:#1E5B45; color:#FFFDF8; font-size:11.5px; font-weight:600;
+    padding:3px 10px; border-radius:999px; align-items:center; gap:6px; }
+  .now-badge i{ width:7px; height:7px; border-radius:50%; background:#C9A227; display:block; flex:none; }
+  .now-badge.on{ display:inline-flex; }
+  .card.now-playing{ border:2px solid #1E5B45; box-shadow:0 0 0 5px rgba(30,91,69,.13), 0 10px 26px rgba(30,91,69,.20); }
+  .ap-dock{ position:fixed; inset-inline:0; bottom:calc(84px + env(safe-area-inset-bottom)); z-index:60; display:none; }
+  .ap-dock.on{ display:block; }
+  .ap-dock-in{ max-width:560px; margin:0 auto; padding:0 16px; }
+  .ap-dock-bar{ background:#1F5138; border-radius:20px; box-shadow:0 12px 28px rgba(31,81,56,.38);
+    padding:12px 14px; display:flex; align-items:center; gap:12px; }
+  .ap-dock-btn{ width:54px; height:54px; border-radius:50%; flex:none; cursor:pointer; padding:0;
+    display:flex; align-items:center; justify-content:center; font-family:inherit; }
+  .ap-dock-btn svg{ display:block; }
+  .ap-pause-btn{ background:#FFFDF8; border:none; }
+  .ap-pause-btn svg{ width:22px; height:22px; fill:#1F5138; }
+  .ap-stop-btn{ background:rgba(255,253,248,.14); border:1.5px solid rgba(255,253,248,.45); }
+  .ap-stop-btn svg{ width:20px; height:20px; fill:#FFFDF8; }
+  .ap-dock-text{ flex:1; min-width:0; text-align:center; color:#FFFDF8; }
+  .ap-dock-text .a{ font-size:16.5px; font-weight:700; }
+  .ap-dock-text .b{ font-size:12px; color:rgba(255,253,248,.75); margin-top:2px; }
+  body.ap-on{ padding-bottom:calc(86px + 104px + env(safe-area-inset-bottom)); }
   .card.done .chip{display:none;}
   .dhikr{
     font-family:'Amiri',serif; font-size:21px; line-height:2.1; margin:0;
@@ -5867,12 +5904,7 @@ function stopListen(){
   listenKey = null;
   syncListenUI();
 }
-function toggleListen(key){
-  if (listenKey === key && listenAudio){
-    if (listenAudio.paused) listenAudio.play().catch(() => {}); else listenAudio.pause();
-    syncListenUI();
-    return;
-  }
+function playClip(key){
   if (listenAudio){ try{ listenAudio.pause(); }catch(e){} listenAudio = null; }
   listenKey = key;
   const a = new Audio(AUDIO_SRC[key]);
@@ -5882,10 +5914,25 @@ function toggleListen(key){
   a.addEventListener("loadedmetadata", syncListenUI);
   a.addEventListener("play", syncListenUI);
   a.addEventListener("pause", syncListenUI);
-  a.addEventListener("ended", stopListen);
-  a.addEventListener("error", stopListen);
+  a.addEventListener("ended", onClipEnded);
+  a.addEventListener("error", onClipError);
   a.play().catch(() => {});
   syncListenUI();
+}
+function toggleListen(key){
+  if (listenKey === key && listenAudio){
+    if (listenAudio.paused) listenAudio.play().catch(() => {}); else listenAudio.pause();
+    syncListenUI();
+    return;
+  }
+  apCancel();
+  playClip(key);
+}
+function onClipEnded(){
+  if (apState) apNext(); else stopListen();
+}
+function onClipError(){
+  if (apState) apNext(); else stopListen();
 }
 function syncListenUI(){
   contentEl.querySelectorAll(".listen-btn").forEach(b => {
@@ -5912,6 +5959,7 @@ function syncListenUI(){
         " — بصوت " + AUDIO_RECITER[AUDIO_SEC[k]];
     }
   });
+  syncAutoUI();
 }
 function bindListenButtons(){
   contentEl.querySelectorAll(".listen-btn").forEach(b => {
@@ -5920,6 +5968,91 @@ function bindListenButtons(){
     b.addEventListener("keydown", ev => { ev.stopPropagation(); });
   });
   syncListenUI();
+}
+
+/* ================= التشغيل المتتابع (v6.1 — تصميم معتمد من المالك 2026-11-17) =================
+   زر «تشغيل الكل» في أول أقسام الأذكار الثلاثة: يشغّل مقاطع القسم بترتيب
+   البطاقات متخطيًا البطاقات بلا مقاطع، مع تمرير تلقائي للبطاقة الجارية
+   وشريط تحكم عائم. استماع فقط بقرار المالك: لا يزيد عدّادًا ولا يُتمّ ذكرًا. */
+const RESET_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>';
+const STOP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>';
+let apState = null;
+function nowBadgeHTML(id){
+  if (!AUDIO_SRC[id]) return '';
+  return '<span class="now-badge"><i></i>جارٍ التشغيل</span>';
+}
+function apQueue(sec){
+  return ATHKAR_DATA[sec].items.map(it => it.id).filter(id => AUDIO_SRC[id]);
+}
+function apDockEl(){
+  let dock = document.getElementById("apDock");
+  if (dock) return dock;
+  dock = document.createElement("div");
+  dock.className = "ap-dock";
+  dock.id = "apDock";
+  dock.innerHTML = '<div class="ap-dock-in"><div class="ap-dock-bar">' +
+    '<button type="button" class="ap-dock-btn ap-pause-btn" id="apPauseBtn" aria-label="إيقاف مؤقت / استئناف">' + PAUSE_SVG + '</button>' +
+    '<div class="ap-dock-text"><div class="a" id="apDockPos"></div><div class="b" id="apDockSub"></div></div>' +
+    '<button type="button" class="ap-dock-btn ap-stop-btn" id="apStopBtn" aria-label="إيقاف التشغيل المتتابع">' + STOP_SVG + '</button>' +
+    '</div></div>';
+  document.body.appendChild(dock);
+  dock.querySelector("#apPauseBtn").addEventListener("click", apTogglePause);
+  dock.querySelector("#apStopBtn").addEventListener("click", () => apStop());
+  return dock;
+}
+function startAutoplay(sec){
+  const q = apQueue(sec);
+  if (!q.length) return;
+  apState = { sec: sec, queue: q, idx: 0 };
+  playClip(q[0]);
+  syncAutoUI();
+  apScrollTo(q[0]);
+}
+function apNext(){
+  if (!apState){ stopListen(); return; }
+  apState.idx += 1;
+  if (apState.idx >= apState.queue.length){ apStop(); return; }
+  const key = apState.queue[apState.idx];
+  playClip(key);
+  syncAutoUI();
+  apScrollTo(key);
+}
+function apStop(){
+  apState = null;
+  stopListen();
+  syncAutoUI();
+}
+function apCancel(){
+  if (!apState) return;
+  apState = null;
+  syncAutoUI();
+}
+function apTogglePause(){
+  if (!listenAudio) return;
+  if (listenAudio.paused) listenAudio.play().catch(() => {}); else listenAudio.pause();
+  syncListenUI();
+}
+function apScrollTo(key){
+  const el = contentEl.querySelector('.card[data-id="' + key + '"]');
+  if (el) setTimeout(() => { try{ el.scrollIntoView({ behavior: "smooth", block: "center" }); }catch(e){} }, 60);
+}
+function syncAutoUI(){
+  const dock = apDockEl();
+  const cur = (apState && listenKey === apState.queue[apState.idx]) ? listenKey : null;
+  contentEl.querySelectorAll(".card[data-id]").forEach(c => {
+    const on = !!cur && c.getAttribute("data-id") === cur;
+    c.classList.toggle("now-playing", on);
+    const badge = c.querySelector(".now-badge");
+    if (badge) badge.classList.toggle("on", on);
+  });
+  const on = !!apState;
+  dock.classList.toggle("on", on);
+  document.body.classList.toggle("ap-on", on);
+  if (on){
+    dock.querySelector("#apDockPos").textContent = "الذكر " + toAr(apState.idx + 1) + " من " + toAr(apState.queue.length);
+    dock.querySelector("#apDockSub").textContent = "تشغيل متتابع — " + ATHKAR_DATA[apState.sec].title;
+    dock.querySelector("#apPauseBtn").innerHTML = (!listenAudio || listenAudio.paused) ? PLAY_SVG : PAUSE_SVG;
+  }
 }
 function cardHTML(item, withHint){
   const rem = counts[item.id];
@@ -5941,7 +6074,7 @@ function cardHTML(item, withHint){
       (withHint ? '<div class="tap-hint"><span class="hand">👆</span><span>اضغط على الذكر للعدّ</span></div>' : '') +
       '<div class="card-top">' +
       '<span class="chip">' + chipText(item) + '</span>' +
-      '<span class="done-badge">✓ تم بحمد الله</span>' + listenBtnHTML(item.id) + shareBtnHTML("a:" + item.id) + '</div>' +
+      '<span class="done-badge">✓ تم بحمد الله</span>' + nowBadgeHTML(item.id) + listenBtnHTML(item.id) + shareBtnHTML("a:" + item.id) + '</div>' +
       '<p class="dhikr">' + fmtDua(item.text) + '</p>' +
       (item.virtue ? '<p class="virtue">' + esc(item.virtue) + '</p>' : '') +
       (item.note ? '<p class="virtue">' + esc(item.note) + '</p>' : '') +
@@ -5979,7 +6112,13 @@ function renderSection(cat){
   let html = '<div class="sec-head"><h2 class="sec-title">' + esc(data.title) + '</h2>' +
     '<p class="sec-date">' + esc(dateLine()) + '</p>' + '<p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p>' +
     chipsHTML(cat) +
-    '<div class="progress-row" style="justify-content:flex-end"><button class="reset-btn" type="button" id="resetBtn">↺ إعادة هذا القسم</button></div>' +
+    (AUDIO_FILES[cat]
+      ? '<div class="ap-row">' +
+          '<button type="button" class="playall-btn" id="playAllBtn">' + PLAY_SVG +
+            '<span class="pa-col"><span class="pa-t">تشغيل الكل</span><span class="pa-s">استماع متتابع</span></span></button>' +
+          '<button type="button" class="reset-btn" id="resetBtn">' + RESET_SVG + '<span class="rs-t">إعادة هذا القسم</span></button>' +
+        '</div>'
+      : '<div class="progress-row" style="justify-content:flex-end"><button class="reset-link" type="button" id="resetBtn">↺ إعادة هذا القسم</button></div>') +
     '</div><div class="cards">';
   let dividerShown = false;
   let bannerPlaced = false;
@@ -6000,12 +6139,14 @@ function renderSection(cat){
   contentEl.querySelectorAll(".sec-chip").forEach(b =>
     b.addEventListener("click", () => {
       const s = b.getAttribute("data-sec");
-      if (s && s !== cat){ renderSection(s); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      if (s && s !== cat){ apStop(); renderSection(s); window.scrollTo({ top: 0, behavior: "smooth" }); }
     }));
   document.getElementById("resetBtn").addEventListener("click", () => {
     data.items.forEach(it => { counts[it.id] = it.target; });
     persistCounts(); renderSection(cat);
   });
+  const playAllBtn = document.getElementById("playAllBtn");
+  if (playAllBtn) playAllBtn.addEventListener("click", () => startAutoplay(cat));
   updateProgressChip();
 }
 function updateProgressChip(){
@@ -6128,6 +6269,7 @@ function scheduleAdvance(){
   }, 450);
 }
 function switchTab(tab){
+  apStop();
   if (tab === "mushaf") tab = "quran";
   if (ATHKAR_SECTIONS.includes(tab)){ currentSection = tab; tab = "athkar"; }
   if (!TABS.includes(tab)) tab = "athkar";
