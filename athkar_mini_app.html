@@ -6172,8 +6172,8 @@ function localEpochDay(){
   return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
 }
 function renderWird(){
-  const dua = DUA_POOL[localEpochDay() % DUA_POOL.length];
-  const hadith = HADITHS[localEpochDay() % HADITHS.length];
+  const dua = DUA_POOL[(localEpochDay() + 719163) % DUA_POOL.length];
+  const hadith = HADITHS[dayOfYear() % HADITHS.length];
   let html = '<div class="sec-head"><h2 class="sec-title">فائدة اليوم</h2>' +
     '<p class="sec-date">' + esc(dateLine()) + '</p><p class="sec-date sec-hijri">' + esc(hijriLine()) + '</p></div><div class="cards">';
   html += '<article class="card read-card"><div class="card-main" id="faidaAyahBody">' +
@@ -6205,6 +6205,46 @@ function faidaAyahHTML(p){
     '<h3 class="read-head" style="margin-top:16px;">التفسير الميسر</h3>' +
     '<p class="read-text">' + esc(p.tafsir) + '</p>';
 }
+const FAIDA_SEQ_KEY = "mudhakir_faida_seq_v1";
+function faidaSeqAyahNumber(){
+  /* v6.3: مرآة عدّاد البوت العام (منذ v3.2 في البوت) — بدأ بالآية 1
+     (الفاتحة) يوم 2026-11-12 ويتقدّم آيةً كل يوم، بلفٍّ بعد 6236 آية. */
+  const anchor = Math.floor(Date.UTC(2026, 10, 12) / 86400000);
+  const diff = localEpochDay() - anchor;
+  return ((diff % 6236) + 6236) % 6236 + 1;
+}
+function faidaSeqAyahHTML(p){
+  return '<h3 class="read-head">📖 آية اليوم من المصحف</h3>' +
+    '<p class="read-text dua-c">' + esc(p.text) + '</p>' +
+    '<p class="virtue">' + esc(p.ref) + '</p>' +
+    '<h3 class="read-head" style="margin-top:16px;">التفسير الميسر</h3>' +
+    '<p class="read-text">' + esc(p.tafsir) + '</p>';
+}
+function loadFaidaSeqAyah(set){
+  let cache = null;
+  try{ cache = JSON.parse(localStorage.getItem(FAIDA_SEQ_KEY) || "null"); }catch(e){}
+  if (cache && cache.date === todayKey() && cache.text && cache.tafsir){ set(faidaSeqAyahHTML(cache)); return; }
+  const n = faidaSeqAyahNumber();
+  fetch("https://api.alquran.cloud/v1/ayah/" + n + "/quran-uthmani")
+    .then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+    .then(j => {
+      const ayah = j && j.data;
+      if (!ayah || !ayah.text || !ayah.surah) throw new Error("shape");
+      return fetch("https://api.alquran.cloud/v1/ayah/" + n + "/ar.muyassar")
+        .then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+        .then(t => {
+          if (!t || !t.data || !t.data.text) throw new Error("shape");
+          return { ayah: ayah, tafsir: t.data.text };
+        });
+    })
+    .then(res => {
+      const payload = { date: todayKey(), n: n, text: res.ayah.text,
+        ref: res.ayah.surah.name + "، الآية " + toAr(res.ayah.numberInSurah), tafsir: res.tafsir };
+      try{ localStorage.setItem(FAIDA_SEQ_KEY, JSON.stringify(payload)); }catch(e){}
+      set(faidaSeqAyahHTML(payload));
+    })
+    .catch(() => set(faidaFallbackHTML()));
+}
 function loadFaidaAyah(){
   if (!document.getElementById("faidaAyahBody")) return;
   const set = h => { const b = document.getElementById("faidaAyahBody"); if (b) b.innerHTML = h; };
@@ -6212,7 +6252,7 @@ function loadFaidaAyah(){
   try{ cache = JSON.parse(localStorage.getItem(FAIDA_KEY) || "null"); }catch(e){}
   if (cache && cache.date === todayKey() && cache.text && cache.tafsir){ set(faidaAyahHTML(cache)); return; }
   const range = faidaRange();
-  if (!range){ set(faidaFallbackHTML()); return; }
+  if (!range){ loadFaidaSeqAyah(set); return; }
   const page = range.to;
   fetch("https://api.alquran.cloud/v1/page/" + page + "/quran-uthmani")
     .then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
